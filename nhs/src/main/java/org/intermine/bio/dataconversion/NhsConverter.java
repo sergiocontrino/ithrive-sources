@@ -13,6 +13,7 @@ package org.intermine.bio.dataconversion;
 import org.apache.log4j.Logger;
 import org.intermine.dataconversion.ItemWriter;
 import org.intermine.metadata.Model;
+import org.intermine.objectstore.ObjectStoreException;
 import org.intermine.util.FormattedTextParser;
 import org.intermine.xml.full.Item;
 
@@ -31,6 +32,8 @@ public class NhsConverter extends BioFileConverter
     private static final String DATA_SOURCE_NAME = "NHS";
     private static final String HUMAN_TAXON = "9606";
     protected static final Logger LOG = Logger.getLogger(NhsConverter.class);
+
+    private Map<String, Item> patients = new HashMap<>();
 
     /**
      * Constructor
@@ -81,61 +84,47 @@ public class NhsConverter extends BioFileConverter
 
             LOG.info("PAT: " + patientId);
 
-            Item patient = createItem("Patient");
-            //patient.setReference("organism", getOrganism(HUMAN_TAXON));
-            patient.setAttribute("identifier", patientId);
-            patient.setAttribute("ethnicity", ethnicity);
-            patient.setAttribute("gender", gender);
+            Item patient = createPatient(patientId,ethnicity,gender);
+//            Item patient = createItem("Patient");
+//            //patient.setReference("organism", getOrganism(HUMAN_TAXON));
+//            patient.setAttribute("identifier", patientId);
+//            patient.setAttribute("ethnicity", ethnicity);
+//            patient.setAttribute("gender", gender);
 
             Item referral = createItem("Referral");
             referral.setAttribute("patientAge", age);
             referral.setAttribute("identifier", referralId);
             referral.setReference("patient", patient);
 
-            store(patient);
+            //store(patient);
             store(referral);
-
-//            Set<String> ensemblIds = parseEnsemblIds(ensembl);
-//            for (String ensemblId : ensemblIds) {
-//                createCrossReference(patient.getIdentifier(), ensemblId, "Ensembl", true);
-//            }
-
-//            if (!StringUtils.isBlank(name)) {
-//                patient.setAttribute("name", name);
-//            }
-//            if (!StringUtils.isBlank(description)) {
-//                patient.setAttribute("description", description);
-//            }
-//            if (!StringUtils.isBlank(entrez)) {
-//                createCrossReference(patient.getIdentifier(), entrez, "NCBI", true);
-//            }
-//
-//            Integer storedGeneId = store(patient);
-//            storedGeneIds.put(patient.getIdentifier(), storedGeneId);
-
-
         }
 
-//        LOG.info("ENSEMBL: duplicateEnsemblIds.size() = " + duplicateEnsembls.size());
-//        LOG.info("ENSEMBL: duplicateEnsemblIds = " + duplicateEnsembls);
-//        // now check that we only saw each ensembl id once
-//        for (Map.Entry<String, String> entry : geneEnsemblIds.entrySet()) {
-//            String geneIdentifier = entry.getKey();
-//            String ensemblId = entry.getValue();
-//            if (!duplicateEnsembls.contains(ensemblId)) {
-//                Attribute att = new Attribute("primaryIdentifier", ensemblId);
-//                store(att, storedGeneIds.get(geneIdentifier));
-//            }
-//        }
-
+        for (Item item : patients.values()) {
+            Integer pid = store(item);
+        }
     }
 
-//    private Set<String> parseEnsemblIds(String fromFile) {
-//        Set<String> ensembls = new HashSet<String>();
-//        if (!StringUtils.isBlank(fromFile)) {
-//            ensembls.addAll(Arrays.asList(fromFile.split(";")));
-//        }
-//        return ensembls;
-//    }
+
+
+    private Item createPatient(String patientId, String ethnicity, String gender)
+            throws ObjectStoreException {
+        Item item = patients.get(patientId);
+        if (item == null) {
+            item = createItem("Patient");
+            item.setAttribute("identifier", patientId);
+            if (!ethnicity.isEmpty()) {
+                item.setAttribute("ethnicity", ethnicity);
+            }
+            if (!gender.isEmpty()) {
+                item.setAttribute("gender", gender);
+            }
+            patients.put(patientId, item);
+        }
+        return item;
+    }
+
+
+
 
 }
