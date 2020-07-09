@@ -30,10 +30,9 @@ public class NhsConverter extends BioFileConverter {
     //
     private static final String DATASET_TITLE = "Districts reports";
     private static final String DATA_SOURCE_NAME = "NHS";
-//    private static final String HUMAN_TAXON = "9606";
     protected static final Logger LOG = Logger.getLogger(NhsConverter.class);
 
-    private Map<String, Item> patients = new HashMap<>();
+    private Map<String, Item> patients = new HashMap<>();   // patientId, patient
     private Map<String, Item> referrals = new HashMap<>();  // patRefId, referral
 
     /**
@@ -66,11 +65,10 @@ public class NhsConverter extends BioFileConverter {
 
 
     private void processDemographic(Reader reader) throws Exception {
-//        public void process(Reader reader) throws Exception {
 
-        Set<String> duplicateEnsembls = new HashSet<String>();
-        Map<String, Integer> storedGeneIds = new HashMap<String, Integer>();
-        Map<String, String> geneEnsemblIds = new HashMap<String, String>();
+//        Set<String> duplicateEnsembls = new HashSet<String>();
+//        Map<String, Integer> storedGeneIds = new HashMap<String, Integer>();
+//        Map<String, String> geneEnsemblIds = new HashMap<String, String>();
 
         // Read all lines into id pairs, track any ensembl ids or symbols that appear twice
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
@@ -84,7 +82,7 @@ public class NhsConverter extends BioFileConverter {
 
         // parse header in case
         String[] header = (String[]) lineIter.next();
-        LOG.info("DEMO " + Arrays.toString(header));
+        LOG.info("PROC DEMO " + Arrays.toString(header));
 
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
@@ -97,13 +95,13 @@ public class NhsConverter extends BioFileConverter {
             String gender = line[5];
 
             String patRefId = patientId + "-" + referralId;  // to identify the referral
-            LOG.info("PAT: " + patRefId);
+            //LOG.info("PAT: " + patRefId);
 
             Item patient = createPatient(patientId, ethnicity, gender);
             Item referral = createReferral(patRefId, referralId, age, patient);
         }
 
-        storeReferrals();
+        //storeReferrals();
         storePatients();
 
     }
@@ -131,9 +129,9 @@ public class NhsConverter extends BioFileConverter {
         if (item == null) {
             item = createItem("Referral");
             item.setAttribute("identifier", referralId);
-            if (!age.isEmpty()) {
-                item.setAttribute("patientAge", age);
-            }
+//            if (!age.isEmpty()) {
+                item.setAttributeIfNotNull("patientAge", age);
+//            }
             if (patient != null) {
                 item.setReference("patient", patient);
             }
@@ -170,12 +168,10 @@ public class NhsConverter extends BioFileConverter {
         // Entered In Error,10/12/15,,,11/12/15,Entered In Error,1,
         // ,,,
 
-
         // parse header in case
         String[] header = (String[]) lineIter.next();
-        LOG.info("CON " + Arrays.toString(header));
-        return;
-/*
+        LOG.info("PROC CON " + Arrays.toString(header));
+
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
 
@@ -196,21 +192,42 @@ public class NhsConverter extends BioFileConverter {
             String appointmentOutcome = line[14];
             String appointmentTeam = line[15];
 
-            LOG.info("PAT: " + patientId);
+            // check if patient
+            if (patients.get(patientId) == null) {
+                LOG.warn("No patient found with identifier: " + patientId);
+                continue;
+            }
+            // add attributes to referral
+            String patRefId = patientId + "-" + referralId;  // to identify the referral
+            if (referrals.get(patRefId) != null) {
+                LOG.warn("Adding referral! " + patRefId);
+                Item thisReferral = referrals.get(patRefId);
+                if (!urgency.isEmpty()) {
+                    thisReferral.setAttribute("urgency", urgency);
+                }
+                if (!source.isEmpty()) {
+                    thisReferral.setAttribute("source", source);
+                }
+                if (!outcome.isEmpty()) {
+                    thisReferral.setAttribute("outcome", outcome);
+                }
+                if (!dischargeReason.isEmpty()) {
+                    thisReferral.setAttribute("dischargeReason", discharegeReason);
+                }
+//                if (!referralDate.isEmpty()) {
+//                    thisReferral.setAttribute("date", referralDate);
+//                }
+//                if (!assessmentDate.isEmpty()) {
+//                    thisReferral.setAttribute("assessment", assessmentDate);
+//                }
 
-            Item patient = createPatient(patientId, ethnicity, gender);
-
-            Item referral = createItem("Referral");
-            referral.setAttribute("patientAge", age);
-            referral.setAttribute("identifier", referralId);
-            referral.setReference("patient", patient);
-
-            //store(patient);
-            store(referral);
+            } else {
+                LOG.warn("Plese create referral!");
+            }
         }
 
-        storePatients();
-*/
+        storeReferrals();
+//        storePatients();
     }
 
 
@@ -231,7 +248,7 @@ public class NhsConverter extends BioFileConverter {
 
         // parse header in case
         String[] header = (String[]) lineIter.next();
-        LOG.info("DIA " + Arrays.toString(header));
+        LOG.info("PROC DIA " + Arrays.toString(header));
 /*
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
