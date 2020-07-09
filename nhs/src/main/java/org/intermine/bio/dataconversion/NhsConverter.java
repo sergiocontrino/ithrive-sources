@@ -30,10 +30,11 @@ public class NhsConverter extends BioFileConverter {
     //
     private static final String DATASET_TITLE = "Districts reports";
     private static final String DATA_SOURCE_NAME = "NHS";
-    private static final String HUMAN_TAXON = "9606";
+//    private static final String HUMAN_TAXON = "9606";
     protected static final Logger LOG = Logger.getLogger(NhsConverter.class);
 
     private Map<String, Item> patients = new HashMap<>();
+    private Map<String, Item> referrals = new HashMap<>();  // patRefId, referral
 
     /**
      * Constructor
@@ -55,31 +56,14 @@ public class NhsConverter extends BioFileConverter {
                 processDemographic(new FileReader(f));
             if (fileName.equalsIgnoreCase("campetPatLevDia.csv"))
                 processDiagnosis(new FileReader(f));
+            if (fileName.equalsIgnoreCase("campetPatLevCon.csv"))
+                processContact(new FileReader(f));
         }
+
+//        storeReferrals();
+//        storePatients();
     }
 
-
-
-//    public void process(File dataDir) throws Exception {
-//        List<File> files = readFilesInDir(dataDir);
-//
-//        for (File f : files) {
-//            String fileName = f.getName();
-//            if (fileName.endsWith("csv")) {
-//                LOG.info("Reading file: " + fileName);
-//                if (fileName.equalsIgnoreCase("campet.csv"))
-//                processFile(new FileReader(f));
-//            }
-//        }
-//    }
-
-//    private List<File> readFilesInDir(File dir) {
-//        List<File> files = new ArrayList<File>();
-//        for (File file : dir.listFiles()) {
-//            files.add(file);
-//        }
-//        return files;
-//    }
 
     private void processDemographic(Reader reader) throws Exception {
 //        public void process(Reader reader) throws Exception {
@@ -105,15 +89,112 @@ public class NhsConverter extends BioFileConverter {
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
 
-//            if (line[0].startsWith("GENE_RGD_ID")) {
-//                continue;
-//            }
             String period = line[0];
             String patientId = line[1];
             String referralId = line[2];
             String age = line[3];
             String ethnicity = line[4];
             String gender = line[5];
+
+            String patRefId = patientId + "-" + referralId;  // to identify the referral
+            LOG.info("PAT: " + patRefId);
+
+            Item patient = createPatient(patientId, ethnicity, gender);
+            Item referral = createReferral(patRefId, referralId, age, patient);
+        }
+
+        storeReferrals();
+        storePatients();
+
+    }
+
+    private Item createPatient(String patientId, String ethnicity, String gender)
+            throws ObjectStoreException {
+        Item item = patients.get(patientId);
+        if (item == null) {
+            item = createItem("Patient");
+            item.setAttribute("identifier", patientId);
+            if (!ethnicity.isEmpty()) {
+                item.setAttribute("ethnicity", ethnicity);
+            }
+            if (!gender.isEmpty()) {
+                item.setAttribute("gender", gender);
+            }
+            patients.put(patientId, item);
+        }
+        return item;
+    }
+
+    private Item createReferral (String patRefId, String referralId, String age, Item patient)
+            throws ObjectStoreException {
+        Item item = referrals.get(patRefId);
+        if (item == null) {
+            item = createItem("Referral");
+            item.setAttribute("identifier", referralId);
+            if (!age.isEmpty()) {
+                item.setAttribute("patientAge", age);
+            }
+            if (patient != null) {
+                item.setReference("patient", patient);
+            }
+            referrals.put(patRefId, item);
+        }
+        return item;
+    }
+
+    private void storePatients () throws ObjectStoreException {
+        for (Item item : patients.values()) {
+            Integer pid = store(item);
+        }
+    }
+
+    private void storeReferrals () throws ObjectStoreException {
+        for (Item item : referrals.values()) {
+            Integer pid = store(item);
+        }
+    }
+
+
+    private void processContact (Reader reader) throws Exception {
+        // Read all lines into id pairs, track any ensembl ids or symbols that appear twice
+        Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
+
+        // format assumption:
+        // Period,Patient ID,Referral ID,ReferralUrgency,ReferralSource,Referral accepted / rejected,
+        // DischargeReason,ReferralDate,AssessmentDate,Date of first treatment contact,
+        // DischargeDate,DischargeReason,Lifetime referrals to CAMHS,
+        // AppointmentDate,AppointmentTypeDesc,AppointmentOutcomeDesc,TeamAtAppointment_Name
+        //
+        // e.g. (one line)
+        // 2015-04-01-2019-03-31,1014003,2,Routine,Gp,Rejected,
+        // Entered In Error,10/12/15,,,11/12/15,Entered In Error,1,
+        // ,,,
+
+
+        // parse header in case
+        String[] header = (String[]) lineIter.next();
+        LOG.info("CON " + Arrays.toString(header));
+        return;
+/*
+        while (lineIter.hasNext()) {
+            String[] line = (String[]) lineIter.next();
+
+            String period = line[0];
+            String patientId = line[1];
+            String referralId = line[2];
+            String urgency = line[3];
+            String source = line[4];
+            String outcome = line[5];
+            String dischargeReason = line[6];
+            String referralDate = line[7];
+            String assessmentDate = line[8];
+            String firstTreatmentDate = line[9];
+            String dischargeDate = line[10];
+            String discharegeReason = line[11];
+            String cumulativeCAMHS = line[12];
+            String appointmentDate = line[13];
+            String appointmentOutcome = line[14];
+            String appointmentTeam = line[15];
 
             LOG.info("PAT: " + patientId);
 
@@ -128,10 +209,10 @@ public class NhsConverter extends BioFileConverter {
             store(referral);
         }
 
-        for (Item item : patients.values()) {
-            Integer pid = store(item);
-        }
+        storePatients();
+*/
     }
+
 
 
     private void processDiagnosis(Reader reader) throws Exception {
@@ -182,22 +263,27 @@ public class NhsConverter extends BioFileConverter {
     }
 
 
-    private Item createPatient(String patientId, String ethnicity, String gender)
-            throws ObjectStoreException {
-        Item item = patients.get(patientId);
-        if (item == null) {
-            item = createItem("Patient");
-            item.setAttribute("identifier", patientId);
-            if (!ethnicity.isEmpty()) {
-                item.setAttribute("ethnicity", ethnicity);
-            }
-            if (!gender.isEmpty()) {
-                item.setAttribute("gender", gender);
-            }
-            patients.put(patientId, item);
-        }
-        return item;
-    }
 
 
 }
+
+//    public void process(File dataDir) throws Exception {
+//        List<File> files = readFilesInDir(dataDir);
+//
+//        for (File f : files) {
+//            String fileName = f.getName();
+//            if (fileName.endsWith("csv")) {
+//                LOG.info("Reading file: " + fileName);
+//                if (fileName.equalsIgnoreCase("campet.csv"))
+//                processFile(new FileReader(f));
+//            }
+//        }
+//    }
+
+//    private List<File> readFilesInDir(File dir) {
+//        List<File> files = new ArrayList<File>();
+//        for (File file : dir.listFiles()) {
+//            files.add(file);
+//        }
+//        return files;
+//    }
