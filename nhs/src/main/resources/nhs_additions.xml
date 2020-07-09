@@ -38,6 +38,7 @@
         <attribute name="appointmentDate" type="java.lang.String" />
         <attribute name="attendance" type="java.lang.String" />
         <attribute name="contactType" type="java.lang.String" />
+        <attribute name="contactOutcome" type="java.lang.String" />
         <attribute name="isUrgent" type="java.lang.String" />
         <attribute name="team" type="java.lang.String" />
         <attribute name="teamTier" type="java.lang.String" />

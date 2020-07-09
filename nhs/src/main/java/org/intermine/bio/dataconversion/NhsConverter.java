@@ -34,6 +34,7 @@ public class NhsConverter extends BioFileConverter {
 
     private Map<String, Item> patients = new HashMap<>();   // patientId, patient
     private Map<String, Item> referrals = new HashMap<>();  // patRefId, referral
+    private Map<String, Item> appointments = new HashMap<>();  // patRefId, referral
 
     /**
      * Constructor
@@ -138,6 +139,8 @@ public class NhsConverter extends BioFileConverter {
         return item;
     }
 
+
+
     private void storePatients () throws ObjectStoreException {
         for (Item item : patients.values()) {
             Integer pid = store(item);
@@ -146,6 +149,12 @@ public class NhsConverter extends BioFileConverter {
 
     private void storeReferrals () throws ObjectStoreException {
         for (Item item : referrals.values()) {
+            Integer pid = store(item);
+        }
+    }
+
+    private void storeAppointments () throws ObjectStoreException {
+        for (Item item : appointments.values()) {
             Integer pid = store(item);
         }
     }
@@ -213,16 +222,36 @@ public class NhsConverter extends BioFileConverter {
             } else {
                 LOG.warn("Plese create referral!");
             }
-        }
+            Item appointment = createAppointment(patientId, referralId, appointmentDate, appointmentType,
+                    appointmentOutcome, appointmentTeam);
 
+        }
         storeReferrals();
-//        storePatients();
+        storeAppointments();
+    }
+
+    private Item createAppointment (String patientId, String referralId, String appointmentDate,
+                                    String appointmentType, String appointmentOutcome, String appointmentTeam)
+            throws ObjectStoreException {
+        String patRefId = patientId + "-" + referralId;  // to identify the referral/appointment
+        Item item = appointments.get(patRefId);
+        if (item == null) {
+            item = createItem("Appointment");
+            item.setAttributeIfNotNull("appointmentDate", appointmentDate);
+            item.setAttributeIfNotNull("contactType", appointmentType);
+            item.setAttributeIfNotNull("contactOutcome", appointmentOutcome);
+            item.setAttributeIfNotNull("team", appointmentTeam);
+            Item patient = patients.get(patientId);
+            if (patient != null) {
+                item.setReference("patient", patient);
+            }
+            appointments.put(patRefId, item);
+        }
+        return item;
     }
 
 
     private void processDiagnosis(Reader reader) throws Exception {
-//        public void process(Reader reader) throws Exception {
-
 
         // Read all lines into id pairs, track any ensembl ids or symbols that appear twice
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
@@ -266,9 +295,6 @@ public class NhsConverter extends BioFileConverter {
         }
 */
     }
-
-
-
 
 }
 
