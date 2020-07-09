@@ -129,9 +129,7 @@ public class NhsConverter extends BioFileConverter {
         if (item == null) {
             item = createItem("Referral");
             item.setAttribute("identifier", referralId);
-//            if (!age.isEmpty()) {
-                item.setAttributeIfNotNull("patientAge", age);
-//            }
+            item.setAttributeIfNotNull("patientAge", age);
             if (patient != null) {
                 item.setReference("patient", patient);
             }
@@ -186,11 +184,12 @@ public class NhsConverter extends BioFileConverter {
             String assessmentDate = line[8];
             String firstTreatmentDate = line[9];
             String dischargeDate = line[10];
-            String discharegeReason = line[11];
+            //String dischargeReason = line[11]; repeated in csv
             String cumulativeCAMHS = line[12];
             String appointmentDate = line[13];
-            String appointmentOutcome = line[14];
-            String appointmentTeam = line[15];
+            String appointmentType = line[14];
+            String appointmentOutcome = line[15];
+            String appointmentTeam = line[16];
 
             // check if patient
             if (patients.get(patientId) == null) {
@@ -200,27 +199,17 @@ public class NhsConverter extends BioFileConverter {
             // add attributes to referral
             String patRefId = patientId + "-" + referralId;  // to identify the referral
             if (referrals.get(patRefId) != null) {
-                LOG.warn("Adding referral! " + patRefId);
+                //LOG.info("Adding referral! " + patRefId);
                 Item thisReferral = referrals.get(patRefId);
-                if (!urgency.isEmpty()) {
-                    thisReferral.setAttribute("urgency", urgency);
-                }
-                if (!source.isEmpty()) {
-                    thisReferral.setAttribute("source", source);
-                }
-                if (!outcome.isEmpty()) {
-                    thisReferral.setAttribute("outcome", outcome);
-                }
-                if (!dischargeReason.isEmpty()) {
-                    thisReferral.setAttribute("dischargeReason", discharegeReason);
-                }
-//                if (!referralDate.isEmpty()) {
-//                    thisReferral.setAttribute("date", referralDate);
-//                }
-//                if (!assessmentDate.isEmpty()) {
-//                    thisReferral.setAttribute("assessment", assessmentDate);
-//                }
-
+                thisReferral.setAttributeIfNotNull("urgency", urgency);
+                thisReferral.setAttributeIfNotNull("source", source);
+                thisReferral.setAttributeIfNotNull("outcome", outcome);
+                thisReferral.setAttributeIfNotNull("dischargeReason", dischargeReason);
+                thisReferral.setAttributeIfNotNull("referralDate", referralDate);
+                thisReferral.setAttributeIfNotNull("assessmentDate", assessmentDate);
+                thisReferral.setAttributeIfNotNull("firstTreatmentDate", firstTreatmentDate);
+                thisReferral.setAttributeIfNotNull("dischargeDate", dischargeDate);
+                thisReferral.setAttributeIfNotNull("cumulativeCAMHS", cumulativeCAMHS );
             } else {
                 LOG.warn("Plese create referral!");
             }
@@ -229,7 +218,6 @@ public class NhsConverter extends BioFileConverter {
         storeReferrals();
 //        storePatients();
     }
-
 
 
     private void processDiagnosis(Reader reader) throws Exception {
