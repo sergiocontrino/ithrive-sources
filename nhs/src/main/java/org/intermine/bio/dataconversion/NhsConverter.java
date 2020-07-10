@@ -35,6 +35,7 @@ public class NhsConverter extends BioFileConverter {
     private Map<String, Item> patients = new HashMap<>();   // patientId, patient
     private Map<String, Item> referrals = new HashMap<>();  // patRefId, referral
     private Map<String, Item> appointments = new HashMap<>();  // patRefId, referral
+    private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
 
     /**
      * Constructor
@@ -139,7 +140,27 @@ public class NhsConverter extends BioFileConverter {
         return item;
     }
 
+    private Item createDiagnostic (String patientId, String patRefId, String assessmentDate, String observation)
+            throws ObjectStoreException {
+        Item referral = referrals.get(patRefId);
+        Item patient = patients.get(patientId);
+        Item dia = createItem("Diagnostic");
+            dia.setAttributeIfNotNull("assessmentDate", assessmentDate);
+            dia.setAttributeIfNotNull("observation", observation);
+            if (patient != null) {
+                dia.setReference("patient", patient);
+            }
+        if (referral != null) {
+            dia.setReference("referral", referral);
+        }
+        return dia;
+    }
 
+
+    //
+    // TODO: add methods to create items in different order (of loading files..)
+    // for the moment we assume DEMO, CON, DIA
+    //
 
     private void storePatients () throws ObjectStoreException {
         for (Item item : patients.values()) {
@@ -220,14 +241,15 @@ public class NhsConverter extends BioFileConverter {
                 thisReferral.setAttributeIfNotNull("dischargeDate", dischargeDate);
                 thisReferral.setAttributeIfNotNull("cumulativeCAMHS", cumulativeCAMHS );
             } else {
-                LOG.warn("Plese create referral!");
+                LOG.warn("Please check your CONTACT data: no referral " + referralId + " for patient "
+                        + patientId +".");
             }
             Item appointment = createAppointment(patientId, referralId, appointmentDate, appointmentType,
                     appointmentOutcome, appointmentTeam);
 
         }
-        storeReferrals();
-        storeAppointments();
+//        storeReferrals();
+//        storeAppointments();
     }
 
     private Item createAppointment (String patientId, String referralId, String appointmentDate,
@@ -257,43 +279,85 @@ public class NhsConverter extends BioFileConverter {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
         // format assumption:
-        // Period,Patient ID,Referral ID,Age at date of referral,EthnicityDescription,Gender
-        // e.g.
-        // 2015-04-01-2019-03-31,1021297,4,17,White - British,M
-        // 2015-04-01-2019-03-31,1098489,3,16,White - British,M
-        // 015-04-01-2019-03-31,1108035,4,13,White - Irish,M
+        // Period,Patient ID,Referral ID,ReferralTeamName,ICD10DiagnosisStartDate,DiagnosisEndDate,
+        // ICD10Diagnosis,Assessment Date, + 51 fields that are flagged with yes/no/nothing in the sheet
+        // see list below
+        //
+        // e.g. (first fields)
+        // 2015-04-01-2019-03-31,1021295,2,CASUS,,,,,
+        //
+        // List of 51 'diagnosis'
+        // Anxious Away From Caregivers, Anxious In Social Situations, Anxious Generally,
+        // Compelled To Do Or Think Things, Panics, Avoids Going Out, Avoids Specific Things,
+        // Repetitive Problematic Behaviours, Depression Low Mood, Self Harm, Extremes Of Mood,
+        // Delusional Beliefs And Hallucinations, Drug And Alcohol Difficulties,
+        // Difficulties Sitting Still Or Concentrating, Behavioural Difficulties, Poses Risk To Others,
+        // Carer Management Of CYP Behaviour, Doesnt Get To Toilet In Time, Disturbed By Traumatic Event,
+        // Eating Issues, Family Relationship Difficulties, Problems In Attachment To Parent Carer,
+        // Peer Relationship Difficulties, Persistent Difficulties Managing Relationships With Others,
+        // Does Not Speak, Gender Discomfort Issues, Unexplained Physical Symptoms,
+        // Unexplained Developmental Difficulties, Self Care Issues, Adjustment To Health Issues,
+        // Looked After Child, Young Carer Status, Learning Disability, Serious Physical Health Issues,
+        // Pervasive Developmental Disorders, Neurological Issues, Current Protection Plan, Child In Need,
+        // Refugee Or Asylum Seeker, Experience Of War Torture Or Trafficking, Experience Of Abuse Or Neglect,
+        // Parental Health Issues, Contact With Youth Justice System, Living In Financial Difficulty, Home,
+        // School Work Or Training, Community, ServiceEngagement, Attendance Difficulties, Attainment Difficulties
+        //
 
         // parse header in case
         String[] header = (String[]) lineIter.next();
         LOG.info("PROC DIA " + Arrays.toString(header));
-/*
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
 
             String period = line[0];
             String patientId = line[1];
             String referralId = line[2];
-            String age = line[3];
-            String ethnicity = line[4];
-            String gender = line[5];
+            String team = line[3];
+            String startDate = line[4];
+            String endDate = line[5];
+            String ICD10diagnosis = line[6];
+            String assessmentDate = line[7];
 
-            LOG.info("PAT: " + patientId);
+            // check if patient
+            if (patients.get(patientId) == null) {
+                LOG.warn("No patient found with identifier: " + patientId);
+                continue;
+            }
+            // add attributes to referral
+            String patRefId = patientId + "-" + referralId;  // to identify the referral
+            if (referrals.get(patRefId) != null) {
+                //LOG.info("Adding referral! " + patRefId);
+                Item thisReferral = referrals.get(patRefId);
+                thisReferral.setAttributeIfNotNull("referralTeam", team);
+                thisReferral.setAttributeIfNotNull("diagnosisStartDate", startDate);
+                thisReferral.setAttributeIfNotNull("diagnosisEndDate", endDate);
+                thisReferral.setAttributeIfNotNull("ICD10diagnosis", ICD10diagnosis);
+                thisReferral.setAttributeIfNotNull("assessmentDate", assessmentDate);
+            } else {
+                LOG.warn("Please check your CONTACT data: no referral " + referralId + " for patient "
+                        + patientId +".");
+                continue;
+            }
 
-            Item patient = createPatient(patientId, ethnicity, gender);
+            // create diagnostic (with date)
+            // for each of the 51 diagnostics if yes add header to diagnostic (as observation)
+            //
+            for (int i=8; i<line.length; i++)
+            {
+                if (line[i].equalsIgnoreCase("yes"))
+                {
+                    LOG.info("DDIIAA " + assessmentDate + ": " + header[i]);
+                    store(createDiagnostic(patientId, patRefId, assessmentDate, header[i]));
+                }
+            }
 
-            Item referral = createItem("Referral");
-            referral.setAttribute("patientAge", age);
-            referral.setAttribute("identifier", referralId);
-            referral.setReference("patient", patient);
-
-            //store(patient);
-            store(referral);
         }
 
-        for (Item item : patients.values()) {
-            Integer pid = store(item);
-        }
-*/
+        storeReferrals();
+        storeAppointments();
+
+
     }
 
 }
