@@ -1,3 +1,5 @@
 rootProject.name = 'bio-sources'
 include ':bio-source-nhs'
 project(':bio-source-nhs').projectDir = new File(settingsDir, './nhs')
+include ':bio-source-por'
+project(':bio-source-por').projectDir = new File(settingsDir, './por')
