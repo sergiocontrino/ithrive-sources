@@ -4,4 +4,93 @@
 <classes>
 <!-- add any <class> elements here -->
 
+    <class name="Patient" is-interface="true">
+        <attribute name="identifier" type="java.lang.Integer" />
+        <attribute name="ethnicity" type="java.lang.String" />
+        <attribute name="gender" type="java.lang.String" />
+        <collection name="referrals" referenced-type="Referral"
+                    reverse-reference="patient" />
+        <collection name="appointments" referenced-type="Appointment"
+                    reverse-reference="patient" />
+        <collection name="diagnostics" referenced-type="Diagnostic"
+                    reverse-reference="patient" />
+    </class>
+
+    <class name="Referral" is-interface="true">
+        <attribute name="identifier" type="java.lang.Integer" />
+        <attribute name="referralDate" type="java.lang.String" />
+        <attribute name="triageDate" type="java.lang.String" />
+        <attribute name="assessmentDate" type="java.lang.String" />
+        <attribute name="firstTreatmentDate" type="java.lang.String" />
+        <attribute name="dischargeDate" type="java.lang.String" />
+        <attribute name="patientAge" type="java.lang.Integer" />
+        <attribute name="locality" type="java.lang.String" />
+        <attribute name="source" type="java.lang.String" />
+        <attribute name="urgency" type="java.lang.String" />
+        <attribute name="outcome" type="java.lang.String" />
+        <attribute name="dischargeReason" type="java.lang.String" />
+        <attribute name="cumulativeCAMHS" type="java.lang.Integer" />
+        <attribute name="referralTeam" type="java.lang.String" />
+        <attribute name="diagnosisStartDate" type="java.lang.String" />
+        <attribute name="diagnosisEndDate" type="java.lang.String" />
+    <!-- storing this in diagnostic: you can have more than 1 series per referral, at different dates
+     <attribute name="diagnosticAssessmentDate" type="java.lang.String" />
+    -->
+        <attribute name="ICD10diagnosis" type="java.lang.String" />
+        <reference name="patient" referenced-type="Patient" />
+        <collection name="appointments" referenced-type="Appointment"
+                    reverse-reference="referral" />
+        <collection name="diagnostics" referenced-type="Diagnostic"
+                    reverse-reference="referral" />
+    </class>
+
+    <class name="Appointment" is-interface="true">
+        <attribute name="appointmentDate" type="java.lang.String" />
+        <attribute name="attendance" type="java.lang.String" />
+        <attribute name="contactType" type="java.lang.String" />
+        <attribute name="contactOutcome" type="java.lang.String" />
+        <attribute name="isUrgent" type="java.lang.String" />
+        <attribute name="team" type="java.lang.String" />
+        <attribute name="teamTier" type="java.lang.String" />
+        <reference name="patient" referenced-type="Patient" />
+        <reference name="referral" referenced-type="Referral"
+                   reverse-reference="appointments"/>
+    </class>
+
+    <class name="Diagnostic" is-interface="true">
+        <attribute name="assessmentDate" type="java.lang.String" />
+        <attribute name="observation" type="java.lang.String" />
+        <reference name="patient" referenced-type="Patient"
+                   reverse-reference="diagnostics"/>
+        <reference name="referral" referenced-type="Referral"
+                   reverse-reference="diagnostics"/>
+    </class>
+
+    <!-- TODO with dates
+    <class name="Referral" is-interface="true">
+        <attribute name="identifier" type="java.lang.Integer" />
+        <attribute name="referralDate" type="java.util.Date" />
+        <attribute name="triageDate" type="java.util.Date" />
+        <attribute name="assessmentDate" type="java.util.Date" />
+        <attribute name="firstTreatmentDate" type="java.util.Date" />
+        <attribute name="dischargeDate" type="java.util.Date" />
+        <attribute name="patientAge" type="java.lang.Integer" />
+        <attribute name="locality" type="java.lang.String" />
+        <attribute name="source" type="java.lang.String" />
+        <attribute name="urgency" type="java.lang.String" />
+        <attribute name="outcome" type="java.lang.String" />
+        <attribute name="dischargeReason" type="java.lang.String" />
+        <attribute name="cumulativeCAMHS" type="java.lang.Integer" />
+        <attribute name="diagnosis" type="java.lang.String" />
+        <reference name="patient" referenced-type="Patient" />
+        <collection name="appointments" referenced-type="Appointment"
+                    reverse-reference="referral" />
+    </class>
+plus
+    <class name="Appointment" is-interface="true">
+        <attribute name="appointmentDate" type="java.util.Date" />
+
+
+-->
+
 </classes>
