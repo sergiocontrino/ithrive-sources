@@ -68,42 +68,64 @@ public class PorConverter extends BioFileConverter {
 
     private void processPatient(Reader reader) throws Exception {
 
-//        Set<String> duplicateEnsembls = new HashSet<String>();
-//        Map<String, Integer> storedGeneIds = new HashMap<String, Integer>();
-//        Map<String, String> geneEnsemblIds = new HashMap<String, String>();
-
-        // Read all lines into id pairs, track any ensembl ids or symbols that appear twice
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
         // format assumption:
-        // Period,Patient ID,Referral ID,Age at date of referral,EthnicityDescription,Gender
+        // Patient ID,Referral ID ,Age at referral,Locality ,Ethnicity,Gender,Diagnosis,
+        // Referral routine / urgent ,Referral source,Referral accepted / rejected,Referral date,
+        // Triage date,Assessment date,Date of first treatment contact,Discharge date ,
+        // Reason for discharge,Lifetime referrals to CAMHS,
+        //
+        // ----- the following are ignored (no data)
+        // Date of contact / appointment 1,Appointment 1 routine / urgent ,
+        // Appointment 1 contact type (face-to-face / non face-to-face),
+        // "Attendance (attended, DNA, patient cancellation, service cancellation) for appointment 1",
+        // Team at appointment 1,"Tier of team for appointment 1 (eg. Tier 2, 3, 4)",
+        // Date of contact / appointment 2,Appointment 2 routine / urgent ,
+        // Appointment 2 contact type (face-to-face / non face-to-face),
+        // "Attendance (attended, DNA, patient cancellation, service cancellation) for appointment 2",
+        // Team at appointment 2,"Tier of team for appointment 2 (eg. Tier 2, 3, 4)",
+        // <-- please continue to generate columns for additional appointments
+        //
         // e.g.
-        // 2015-04-01-2019-03-31,1021297,4,17,White - British,M
-        // 2015-04-01-2019-03-31,1098489,3,16,White - British,M
-        // 015-04-01-2019-03-31,1108035,4,13,White - Irish,M
+        // 26127609,31417853,11,,Z,F,,Routine,General Medical Practitioner,Accepted,03/11/15 11:24,
+        // ,,,06/06/16 11:51,Discharged - Treatment completed,1,,,,,,,,,,,,,
 
         // parse header in case
         String[] header = (String[]) lineIter.next();
-        LOG.info("PROC DEMO " + Arrays.toString(header));
+        LOG.info("PROC PAT " + Arrays.toString(header));
 
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
 
-            String period = line[0];
-            String patientId = line[1];
-            String referralId = line[2];
-            String age = line[3];
+            String patientId = line[0];
+            String referralId = line[1];
+            String age = line[2];
+            String locality = line[3];
             String ethnicity = line[4];
             String gender = line[5];
+            String diagnosis = line[6];
+            String urgency = line[7];
+            String source = line[8];
+            String outcome = line[9];
+            String referralDate = line[10];
+            String triageDate = line[11];
+            String assessmentDate = line[12];
+            String firstTreatmentDate = line[13];
+            String dischargeDate = line[14];
+            String dischargeReason = line[15];
+            String cumulativeCAMHS = line[16];
 
             String patRefId = patientId + "-" + referralId;  // to identify the referral
             //LOG.info("PAT: " + patRefId);
 
             Item patient = createPatient(patientId, ethnicity, gender);
-            Item referral = createReferral(patRefId, referralId, age, patient);
+            Item referral = createReferral(patRefId, referralId, age, locality, diagnosis, urgency,
+                    source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
+                    dischargeDate, dischargeReason, cumulativeCAMHS, patient);
         }
 
-        //storeReferrals();
+        storeReferrals();
         storePatients();
 
     }
@@ -125,13 +147,29 @@ public class PorConverter extends BioFileConverter {
         return item;
     }
 
-    private Item createReferral(String patRefId, String referralId, String age, Item patient)
+    private Item createReferral(String patRefId, String referralId, String age, String locality,
+            String diagnosis, String urgency, String source, String outcome, String referralDate,
+            String triageDate, String assessmentDate, String firstTreatmentDate, String dischargeDate,
+            String dischargeReason, String cumulativeCAMHS, Item patient)
             throws ObjectStoreException {
         Item item = referrals.get(patRefId);
         if (item == null) {
             item = createItem("Referral");
             item.setAttribute("identifier", referralId);
             item.setAttributeIfNotNull("patientAge", age);
+            item.setAttributeIfNotNull("locality", locality);
+            item.setAttributeIfNotNull("ICD10diagnosis", diagnosis);
+            item.setAttributeIfNotNull("urgency", urgency);
+            item.setAttributeIfNotNull("source", source);
+            item.setAttributeIfNotNull("outcome", outcome);
+            item.setAttributeIfNotNull("referralDate", referralDate);
+            item.setAttributeIfNotNull("triageDate", triageDate);
+            item.setAttributeIfNotNull("assessmentDate", assessmentDate);
+            item.setAttributeIfNotNull("firstTreatmentDate", firstTreatmentDate);
+            item.setAttributeIfNotNull("dischargeDate", dischargeDate);
+            item.setAttributeIfNotNull("dischargeReason", dischargeReason);
+            item.setAttributeIfNotNull("cumulativeCAMHS", cumulativeCAMHS);
+
             if (patient != null) {
                 item.setReference("patient", patient);
             }
@@ -140,21 +178,21 @@ public class PorConverter extends BioFileConverter {
         return item;
     }
 
-    private Item createDiagnostic(String patientId, String patRefId, String assessmentDate, String observation)
-            throws ObjectStoreException {
-        Item referral = referrals.get(patRefId);
-        Item patient = patients.get(patientId);
-        Item dia = createItem("Diagnostic");
-        dia.setAttributeIfNotNull("assessmentDate", assessmentDate);
-        dia.setAttributeIfNotNull("observation", observation);
-        if (patient != null) {
-            dia.setReference("patient", patient);
-        }
-        if (referral != null) {
-            dia.setReference("referral", referral);
-        }
-        return dia;
-    }
+//    private Item createDiagnostic(String patientId, String patRefId, String assessmentDate, String observation)
+//            throws ObjectStoreException {
+//        Item referral = referrals.get(patRefId);
+//        Item patient = patients.get(patientId);
+//        Item dia = createItem("Diagnostic");
+//        dia.setAttributeIfNotNull("assessmentDate", assessmentDate);
+//        dia.setAttributeIfNotNull("observation", observation);
+//        if (patient != null) {
+//            dia.setReference("patient", patient);
+//        }
+//        if (referral != null) {
+//            dia.setReference("referral", referral);
+//        }
+//        return dia;
+//    }
 
 
     //
@@ -180,22 +218,22 @@ public class PorConverter extends BioFileConverter {
         }
     }
 
+    private void storeAll() throws ObjectStoreException {
+        storePatients();
+        storeReferrals();
+        storeAppointments();
+    }
 
     private void processContact(Reader reader) throws Exception {
-        // Read all lines into id pairs, track any ensembl ids or symbols that appear twice
-        Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
+         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
         // format assumption:
-        // Period,Patient ID,Referral ID,ReferralUrgency,ReferralSource,Referral accepted / rejected,
-        // DischargeReason,ReferralDate,AssessmentDate,Date of first treatment contact,
-        // DischargeDate,DischargeReason,Lifetime referrals to CAMHS,
-        // AppointmentDate,AppointmentTypeDesc,AppointmentOutcomeDesc,TeamAtAppointment_Name
+        // Patient ID,Referral ID ,Appointment ID,Contact Number,Date of contact ,
+        // Appointment routine / urgent ,Appointment contact type , Attendance ,Team ,Tier of team
         //
         // e.g. (one line)
-        // 2015-04-01-2019-03-31,1014003,2,Routine,Gp,Rejected,
-        // Entered In Error,10/12/15,,,11/12/15,Entered In Error,1,
-        // ,,,
-
+        // 20821007,22122956,2066926618,1,11/04/16 15:00,,f2f,Finished,,
+        //
         // parse header in case
         String[] header = (String[]) lineIter.next();
         LOG.info("PROC CON " + Arrays.toString(header));
@@ -203,79 +241,63 @@ public class PorConverter extends BioFileConverter {
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
 
-            String period = line[0];
-            String patientId = line[1];
-            String referralId = line[2];
-            String urgency = line[3];
-            String source = line[4];
-            String outcome = line[5];
-            String dischargeReason = line[6];
-            String referralDate = line[7];
-            String assessmentDate = line[8];
-            String firstTreatmentDate = line[9];
-            String dischargeDate = line[10];
-            //String dischargeReason = line[11]; repeated in csv
-            String cumulativeCAMHS = line[12];
-            String appointmentDate = line[13];
-            String appointmentType = line[14];
-            String appointmentOutcome = line[15];
-            String appointmentTeam = line[16];
+            String patientId = line[0];
+            String referralId = line[1];
+            String appointmentId = line[2];
+            String ordinal = line[3];
+            String appointmentDate = line[4];
+            String urgency = line[5];
+            String appointmentType = line[6];
+            String attendance = line[7];
+            String team = line[8];
+            String tier = line[9];
 
             // check if patient
             if (patients.get(patientId) == null) {
                 LOG.warn("No patient found with identifier: " + patientId);
                 continue;
             }
-            // add attributes to referral
-            String patRefId = patientId + "-" + referralId;  // to identify the referral
-            if (referrals.get(patRefId) != null) {
-                //LOG.info("Adding referral! " + patRefId);
-                Item thisReferral = referrals.get(patRefId);
-                thisReferral.setAttributeIfNotNull("urgency", urgency);
-                thisReferral.setAttributeIfNotNull("source", source);
-                thisReferral.setAttributeIfNotNull("outcome", outcome);
-                thisReferral.setAttributeIfNotNull("dischargeReason", dischargeReason);
-                thisReferral.setAttributeIfNotNull("referralDate", referralDate);
-                thisReferral.setAttributeIfNotNull("assessmentDate", assessmentDate);
-                thisReferral.setAttributeIfNotNull("firstTreatmentDate", firstTreatmentDate);
-                thisReferral.setAttributeIfNotNull("dischargeDate", dischargeDate);
-                thisReferral.setAttributeIfNotNull("cumulativeCAMHS", cumulativeCAMHS);
-            } else {
-                LOG.warn("Please check your CONTACT data: no referral " + referralId + " for patient "
-                        + patientId + ".");
-            }
-            Item appointment = createAppointment(patientId, referralId, appointmentDate, appointmentType,
-                    appointmentOutcome, appointmentTeam);
 
+            Item appointment = createAppointment(patientId, referralId, appointmentId, ordinal,
+                    appointmentDate, urgency, appointmentType, attendance, team, tier);
         }
-//        storeReferrals();
-//        storeAppointments();
+        //storeReferrals();
+        storeAppointments();
     }
 
-    private Item createAppointment(String patientId, String referralId, String appointmentDate,
-                                   String appointmentType, String appointmentOutcome, String appointmentTeam)
+    private Item createAppointment(String patientId, String referralId, String appointmentId,
+                                   String ordinal, String appointmentDate, String urgency,
+                                   String appointmentType, String attendance, String team, String tier)
             throws ObjectStoreException {
         String patRefId = patientId + "-" + referralId;  // to identify the referral/appointment
         Item item = appointments.get(patRefId);
         if (item == null) {
             item = createItem("Appointment");
+            item.setAttributeIfNotNull("identifier", appointmentId);
+            item.setAttributeIfNotNull("ordinal", ordinal);
             item.setAttributeIfNotNull("appointmentDate", appointmentDate);
+            item.setAttributeIfNotNull("urgency", urgency);
             item.setAttributeIfNotNull("contactType", appointmentType);
-            item.setAttributeIfNotNull("contactOutcome", appointmentOutcome);
-            item.setAttributeIfNotNull("team", appointmentTeam);
+            item.setAttributeIfNotNull("contactOutcome", attendance);
+            item.setAttributeIfNotNull("team", team);
+            item.setAttributeIfNotNull("teamTier", tier);
             Item patient = patients.get(patientId);
+            Item referral = referrals.get(patRefId);
             if (patient != null) {
                 item.setReference("patient", patient);
             }
+            if (referral != null) {
+                item.setReference("referral", referral);
+            }
+
             appointments.put(patRefId, item);
         }
         return item;
     }
 
-
+/*
     private void processDiagnosis(Reader reader) throws Exception {
 
-        // Read all lines into id pairs, track any ensembl ids or symbols that appear twice
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
         // format assumption:
@@ -357,5 +379,5 @@ public class PorConverter extends BioFileConverter {
 
 
     }
-
+*/
 }

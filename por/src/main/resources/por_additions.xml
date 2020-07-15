@@ -45,8 +45,11 @@
     </class>
 
     <class name="Appointment" is-interface="true">
+        <attribute name="identifier" type="java.lang.Long" />
+        <attribute name="ordinal" type="java.lang.Integer" />
         <attribute name="appointmentDate" type="java.lang.String" />
-        <attribute name="attendance" type="java.lang.String" />
+<!--        <attribute name="attendance" type="java.lang.String" />
+-->
         <attribute name="contactType" type="java.lang.String" />
         <attribute name="contactOutcome" type="java.lang.String" />
         <attribute name="isUrgent" type="java.lang.String" />
