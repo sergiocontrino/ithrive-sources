@@ -31,14 +31,16 @@ import java.util.Map;
  */
 public class PorConverter extends BioFileConverter {
     //
-    private static final String DATASET_TITLE = "Portsmouth";
+    //private static final String DATASET_TITLE = "Portsmouth";
     private static final String DATA_SOURCE_NAME = "NHS";
     protected static final Logger LOG = Logger.getLogger(PorConverter.class);
 
     private Map<String, Item> patients = new HashMap<>();   // patientId, patient
     private Map<String, Item> referrals = new HashMap<>();  // patRefId, referral
-    private Map<String, Item> appointments = new HashMap<>();  // patRefId, referral
-    private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
+    private Map<String, Item> appointments = new HashMap<>();  // patRefId, appointment
+    private Map<String, Item> dataSets = new HashMap<>();  // datasetName, dataSet
+    //private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
+
 
     /**
      * Constructor
@@ -47,7 +49,8 @@ public class PorConverter extends BioFileConverter {
      * @param model  the Model
      */
     public PorConverter(ItemWriter writer, Model model) {
-        super(writer, model, DATA_SOURCE_NAME, DATASET_TITLE, null);
+//        super(writer, model, DATA_SOURCE_NAME, DATASET_TITLE, null);
+        super(writer, model, DATA_SOURCE_NAME, null, null);
     }
 
     /**
@@ -58,12 +61,40 @@ public class PorConverter extends BioFileConverter {
         String fileName = getCurrentFile().getName();
         if (fileName.endsWith("csv")) {
             LOG.info("Reading file: " + fileName);
+
+            // set datasource/dataset
+            if (fileName.contains("Southampton"))
+                createDataSet("Southampton");
+            if (fileName.contains("Portsmouth"))
+                createDataSet("Portsmouth");
+            // process file
             if (fileName.contains("Patient"))
                 processPatient(new FileReader(f));
             if (fileName.contains("Contact"))
                 processContact(new FileReader(f));
         }
     }
+
+
+
+    /**
+     * create datasource and dataset
+     *
+     */
+    private void createDataSet(String office)
+            throws ObjectStoreException {
+        Item dataSource = dataSets.get(office);
+        if (dataSource == null) {
+            dataSource = createItem("DataSource");
+            dataSource.setAttribute("name", DATA_SOURCE_NAME);
+            Item dataSet = createItem("DataSet");
+            dataSet.setAttribute("name", office);
+            store(dataSource);
+            dataSet.setReference("dataSource", dataSource.getIdentifier());
+            store(dataSet);
+        }
+            dataSets.put(office, dataSource);
+        }
 
 
     private void processPatient(Reader reader) throws Exception {
