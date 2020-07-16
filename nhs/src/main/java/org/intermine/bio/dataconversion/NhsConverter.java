@@ -28,7 +28,7 @@ import java.util.*;
  */
 public class NhsConverter extends BioFileConverter {
     //
-    private static final String DATASET_TITLE = "Districts reports";
+    private static final String DATASET_TITLE = "Cambridge and Peterborough";
     private static final String DATA_SOURCE_NAME = "NHS";
     protected static final Logger LOG = Logger.getLogger(NhsConverter.class);
 
