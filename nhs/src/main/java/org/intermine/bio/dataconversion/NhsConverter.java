@@ -36,6 +36,9 @@ public class NhsConverter extends BioFileConverter {
     private Map<String, Item> referrals = new HashMap<>();  // patRefId, referral
     private Map<String, Item> appointments = new HashMap<>();  // patRefId, referral
     private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
+    private Map<String, Item> dataSets = new HashMap<>();  // datasetName, dataSet
+
+    private String dataSetRef = null; // to link patients to sites
 
     /**
      * Constructor
@@ -53,6 +56,7 @@ public class NhsConverter extends BioFileConverter {
         String fileName = getCurrentFile().getName();
         if (fileName.endsWith("csv")) {
             LOG.info("Reading file: " + fileName);
+            createDataSet(DATASET_TITLE);   // using this loader only for cambridge dataset
             if (fileName.equalsIgnoreCase("campet.csv"))
                 processDemographic(new FileReader(f));
             if (fileName.equalsIgnoreCase("campetPatLevDia.csv"))
@@ -108,6 +112,26 @@ public class NhsConverter extends BioFileConverter {
 
     }
 
+    /**
+     * create datasource and dataset
+     *
+     */
+    private void createDataSet(String office)
+            throws ObjectStoreException {
+        Item dataSource = dataSets.get(office);
+        if (dataSource == null) {
+            dataSource = createItem("DataSource");
+            dataSource.setAttribute("name", DATA_SOURCE_NAME);
+            Item dataSet = createItem("DataSet");
+            dataSet.setAttribute("name", office);
+            store(dataSource);
+            dataSet.setReference("dataSource", dataSource.getIdentifier());
+            store(dataSet);
+            dataSetRef = dataSet.getIdentifier();
+            dataSets.put(office, dataSource);
+        }
+    }
+
     private Item createPatient(String patientId, String ethnicity, String gender)
             throws ObjectStoreException {
         Item item = patients.get(patientId);
@@ -120,6 +144,7 @@ public class NhsConverter extends BioFileConverter {
             if (!gender.isEmpty()) {
                 item.setAttribute("gender", gender);
             }
+            item.setReference("dataSet", dataSetRef);
             patients.put(patientId, item);
         }
         return item;
