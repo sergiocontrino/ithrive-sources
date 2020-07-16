@@ -4,16 +4,24 @@
 <classes>
 <!-- add any <class> elements here -->
 
+    <class name="DataSet" is-interface="true">
+        <collection name="patients" referenced-type="Patient"
+                    reverse-reference="dataSet" />
+    </class>
+
     <class name="Patient" is-interface="true">
         <attribute name="identifier" type="java.lang.Integer" />
         <attribute name="ethnicity" type="java.lang.String" />
         <attribute name="gender" type="java.lang.String" />
+        <reference name="dataSet" referenced-type="DataSet"
+                    reverse-reference="patients"/>
         <collection name="referrals" referenced-type="Referral"
                     reverse-reference="patient" />
         <collection name="appointments" referenced-type="Appointment"
                     reverse-reference="patient" />
         <collection name="diagnostics" referenced-type="Diagnostic"
                     reverse-reference="patient" />
+
     </class>
 
     <class name="Referral" is-interface="true">

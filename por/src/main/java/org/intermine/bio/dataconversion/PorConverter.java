@@ -41,6 +41,7 @@ public class PorConverter extends BioFileConverter {
     private Map<String, Item> dataSets = new HashMap<>();  // datasetName, dataSet
     //private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
 
+    private String dataSetRef = null; // to link patients to sites
 
     /**
      * Constructor
@@ -92,6 +93,7 @@ public class PorConverter extends BioFileConverter {
             store(dataSource);
             dataSet.setReference("dataSource", dataSource.getIdentifier());
             store(dataSet);
+            dataSetRef = dataSet.getIdentifier();
         }
             dataSets.put(office, dataSource);
         }
@@ -173,6 +175,7 @@ public class PorConverter extends BioFileConverter {
             if (!gender.isEmpty()) {
                 item.setAttribute("gender", gender);
             }
+            item.setReference("dataSet", dataSetRef);
             patients.put(patientId, item);
         }
         return item;
