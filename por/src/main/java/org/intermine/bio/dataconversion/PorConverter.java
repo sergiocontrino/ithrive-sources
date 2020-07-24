@@ -42,6 +42,7 @@ public class PorConverter extends BioFileConverter {
     //private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
 
     private String dataSetRef = null; // to link patients to sites
+    private String dataSet = null; // to deal with differences in format
 
     /**
      * Constructor
@@ -65,11 +66,15 @@ public class PorConverter extends BioFileConverter {
 
             // set datasource/dataset
             if (fileName.contains("Southampton"))
-                createDataSet("Southampton");
+                dataSet = "Southampton";
             if (fileName.contains("Portsmouth"))
-                createDataSet("Portsmouth");
+                dataSet = "Portsmouth";
+            if (fileName.contains("NeCor"))
+                dataSet = "Ne-Cor";
+            createDataSet(dataSet);
+
             // process file
-            if (fileName.contains("Patient"))
+            if (fileName.contains("Patient") || fileName.contains("Referral")) // referral for ne-cor
                 processPatient(new FileReader(f));
             if (fileName.contains("Contact"))
                 processContact(new FileReader(f));
@@ -124,12 +129,19 @@ public class PorConverter extends BioFileConverter {
         // 26127609,31417853,11,,Z,F,,Routine,General Medical Practitioner,Accepted,03/11/15 11:24,
         // ,,,06/06/16 11:51,Discharged - Treatment completed,1,,,,,,,,,,,,,
 
+        // for Ne-Cor:
+        // [10] = period -> skip
+        //
+
         // parse header in case
         String[] header = (String[]) lineIter.next();
         LOG.info("PROC PAT " + Arrays.toString(header));
 
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
+
+            // these can have different positions
+            String referralDate, triageDate, dischargeDate;
 
             String patientId = line[0];
             String referralId = line[1];
@@ -141,13 +153,23 @@ public class PorConverter extends BioFileConverter {
             String urgency = line[7];
             String source = line[8];
             String outcome = line[9];
-            String referralDate = line[10];
-            String triageDate = line[11];
+            //String referralDate = line[10];
+            //String triageDate = line[11];
             String assessmentDate = line[12];
             String firstTreatmentDate = line[13];
-            String dischargeDate = line[14];
+            //String dischargeDate = line[14];
             String dischargeReason = line[15];
             String cumulativeCAMHS = line[16];
+
+            if (dataSet.contains("Ne-Cor")) {
+                referralDate = line[11];
+                triageDate = line[12];
+                dischargeDate = line[15];
+            } else {
+                referralDate = line[10];
+                triageDate = line[11];
+                dischargeDate = line[14];
+            }
 
             String patRefId = patientId + "-" + referralId;  // to identify the referral
             //LOG.info("PAT: " + patRefId);
@@ -272,20 +294,36 @@ public class PorConverter extends BioFileConverter {
         String[] header = (String[]) lineIter.next();
         LOG.info("PROC CON " + Arrays.toString(header));
 
+        // define headers
+        String appointmentId = null, ordinal = null, appointmentDate = null, urgency = null,
+                appointmentType = null, attendance = null, team = null, tier = null;
+
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
 
             String patientId = line[0];
             String referralId = line[1];
-            String appointmentId = line[2];
-            String ordinal = line[3];
-            String appointmentDate = line[4];
-            String urgency = line[5];
-            String appointmentType = line[6];
-            String attendance = line[7];
-            String team = line[8];
-            String tier = line[9];
 
+            if (dataSet.contains("Na-Cor")) {
+                appointmentDate = line[3];
+                appointmentType = line[4];
+                team = line[5];
+            } else {
+                try {
+                appointmentId = line[2];
+                ordinal = line[3];
+                appointmentDate = line[4];
+                urgency = line[5];
+                appointmentType = line[6];
+                attendance = line[7];
+                team = line[8];
+                tier = line[9];
+                }  catch (ArrayIndexOutOfBoundsException exception) {
+                // the sheets have different lenghts
+                continue;
+                }
+
+            }
             // check if patient
             if (patients.get(patientId) == null) {
                 LOG.warn("No patient found with identifier: " + patientId);
