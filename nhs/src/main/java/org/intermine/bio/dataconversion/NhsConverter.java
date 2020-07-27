@@ -128,9 +128,10 @@ public class NhsConverter extends BioFileConverter {
             dataSet.setReference("dataSource", dataSource.getIdentifier());
             store(dataSet);
             dataSetRef = dataSet.getIdentifier();
+        }
             dataSets.put(office, dataSource);
         }
-    }
+
 
     private Item createPatient(String patientId, String ethnicity, String gender)
             throws ObjectStoreException {

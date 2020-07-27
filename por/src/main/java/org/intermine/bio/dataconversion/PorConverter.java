@@ -71,10 +71,14 @@ public class PorConverter extends BioFileConverter {
                 dataSet = "Portsmouth";
             if (fileName.contains("NeCor"))
                 dataSet = "Ne-Cor";
+            if (fileName.contains("Sunderland"))
+                dataSet = "Sunderland";
             createDataSet(dataSet);
 
             // process file
-            if (fileName.contains("Patient") || fileName.contains("Referral")) // referral for ne-cor
+            if (fileName.contains("Patient")
+                    || fileName.contains("Referral") // ne-cor
+                    || fileName.contains("Data"))    // sunderland
                 processPatient(new FileReader(f));
             if (fileName.contains("Contact"))
                 processContact(new FileReader(f));
@@ -141,7 +145,8 @@ public class PorConverter extends BioFileConverter {
             String[] line = (String[]) lineIter.next();
 
             // these can have different positions
-            String referralDate, triageDate, dischargeDate;
+            String referralDate = null, triageDate = null, dischargeDate = null,
+                    dischargeReason = null, cumulativeCAMHS = null;
 
             String patientId = line[0];
             String referralId = line[1];
@@ -158,17 +163,23 @@ public class PorConverter extends BioFileConverter {
             String assessmentDate = line[12];
             String firstTreatmentDate = line[13];
             //String dischargeDate = line[14];
-            String dischargeReason = line[15];
-            String cumulativeCAMHS = line[16];
+            //String dischargeReason = line[15];
+            //String cumulativeCAMHS = line[16];
 
             if (dataSet.contains("Ne-Cor")) {
                 referralDate = line[11];
                 triageDate = line[12];
                 dischargeDate = line[15];
+            } else if (dataSet.contains("Sunderland")){
+                dischargeDate = line[13];
+                dischargeReason = line[14];
+                cumulativeCAMHS = line[15];
             } else {
                 referralDate = line[10];
                 triageDate = line[11];
                 dischargeDate = line[14];
+                dischargeReason = line[15];
+                cumulativeCAMHS = line[16];
             }
 
             String patRefId = patientId + "-" + referralId;  // to identify the referral
