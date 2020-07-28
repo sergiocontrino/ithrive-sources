@@ -65,22 +65,25 @@ public class PorConverter extends BioFileConverter {
             LOG.info("Reading file: " + fileName);
 
             // set datasource/dataset
-            if (fileName.contains("Southampton"))
-                dataSet = "Southampton";
-            if (fileName.contains("Portsmouth"))
-                dataSet = "Portsmouth";
             if (fileName.contains("NeCor"))
                 dataSet = "Ne-Cor";
+            if (fileName.contains("Portsmouth"))
+                dataSet = "Portsmouth";
+            if (fileName.contains("Southampton"))
+                dataSet = "Southampton";
+            if (fileName.contains("Stockport"))
+                dataSet = "Stockport";
             if (fileName.contains("Sunderland"))
                 dataSet = "Sunderland";
             createDataSet(dataSet);
 
             // process file
             if (fileName.contains("Patient")
-                    || fileName.contains("Referral") // ne-cor
-                    || fileName.contains("Data"))    // sunderland
+                    || fileName.contains("Referral")  // ne-cor
+                    || fileName.contains("Data"))     // sunderland
                 processPatient(new FileReader(f));
-            if (fileName.contains("Contact"))
+            if (fileName.contains("Contact")
+                    || fileName.contains("Activity")) // stockport
                 processContact(new FileReader(f));
         }
     }
@@ -148,9 +151,9 @@ public class PorConverter extends BioFileConverter {
             String referralDate = null, triageDate = null, dischargeDate = null,
                     dischargeReason = null, cumulativeCAMHS = null;
 
-            String patientId = line[0];
-            String referralId = line[1];
-            String age = line[2];
+            String patientId = cleanIdentifier(line[0]);
+            String referralId = cleanIdentifier(line[1]);
+            String age = cleanIdentifier(line[2]);
             String locality = line[3];
             String ethnicity = line[4];
             String gender = line[5];
@@ -306,19 +309,27 @@ public class PorConverter extends BioFileConverter {
         LOG.info("PROC CON " + Arrays.toString(header));
 
         // define headers
-        String appointmentId = null, ordinal = null, appointmentDate = null, urgency = null,
+        String patientId = null, referralId = null, appointmentId = null, appointmentDate = null,
+                ordinal = null, urgency = null,
                 appointmentType = null, attendance = null, team = null, tier = null;
 
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
 
-            String patientId = line[0];
-            String referralId = line[1];
+            patientId = cleanIdentifier(line[0]);
+            referralId = cleanIdentifier(line[1]);
 
             if (dataSet.contains("Na-Cor")) {
                 appointmentDate = line[3];
                 appointmentType = line[4];
                 team = line[5];
+            } else if (dataSet.contains("Stockport")){
+                appointmentId = cleanIdentifier(line[2]);
+                appointmentDate = line[3];
+                urgency = line[4];
+                appointmentType = line[6];
+                attendance = line[5];
+                team = line[7];
             } else {
                 try {
                 appointmentId = line[2];
@@ -377,6 +388,33 @@ public class PorConverter extends BioFileConverter {
         }
         return item;
     }
+
+    private String cleanIdentifier(String identifier) {
+        // needed for stockport, e.g.:
+        // patientId = RT2550527
+        // referralId = 3_155204910
+        // contactId = 5_C_2480976  (activity Id)
+        // TODO: check if rather do a process just for stockport
+
+        String cleanId = identifier;
+        if (identifier.startsWith("RT")) {
+//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
+           return identifier.replace("RT", "");
+        }
+        if (identifier.contains("_")) {
+            String[] splitted = identifier.split("_");
+//            LOG.info("IIDD-US " + cleanId + "->" + splitted[splitted.length -1]);
+            return splitted[splitted.length -1];
+        }
+//        LOG.info("IIDD-nil " + identifier);
+        if (identifier.equalsIgnoreCase("NULL")) {
+            LOG.info("IIDD-NULL ");
+            return null;
+        }
+
+        return identifier;
+    }
+
 
 /*
     private void processDiagnosis(Reader reader) throws Exception {
