@@ -40,6 +40,7 @@ public class PorConverter extends BioFileConverter {
     private Map<String, Item> appointments = new HashMap<>();  // patRefId, appointment
     private Map<String, Item> dataSets = new HashMap<>();  // datasetName, dataSet
     //private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
+    private Map<String, String> ref2pat = new HashMap<>();  // referralId, patientId  (for worcester)
 
     private String dataSetRef = null; // to link patients to sites
     private String dataSet = null; // to deal with differences in format
@@ -75,11 +76,13 @@ public class PorConverter extends BioFileConverter {
                 dataSet = "Stockport";
             if (fileName.contains("Sunderland"))
                 dataSet = "Sunderland";
+            if (fileName.contains("Worcester"))
+                dataSet = "Worcester";
             createDataSet(dataSet);
 
             // process file
             if (fileName.contains("Patient")
-                    || fileName.contains("Referral")  // ne-cor
+                    || fileName.contains("Referral")  // ne-cor, worcester
                     || fileName.contains("Data"))     // sunderland
                 processPatient(new FileReader(f));
             if (fileName.contains("Contact")
@@ -87,7 +90,6 @@ public class PorConverter extends BioFileConverter {
                 processContact(new FileReader(f));
         }
     }
-
 
 
     /**
@@ -148,45 +150,85 @@ public class PorConverter extends BioFileConverter {
             String[] line = (String[]) lineIter.next();
 
             // these can have different positions
-            String referralDate = null, triageDate = null, dischargeDate = null,
-                    dischargeReason = null, cumulativeCAMHS = null;
+//            String referralDate = null, triageDate = null, dischargeDate = null,
+//                    dischargeReason = null, cumulativeCAMHS = null;
 
-            String patientId = cleanIdentifier(line[0]);
-            String referralId = cleanIdentifier(line[1]);
-            String age = cleanIdentifier(line[2]);
-            String locality = line[3];
-            String ethnicity = line[4];
-            String gender = line[5];
-            String diagnosis = line[6];
-            String urgency = line[7];
-            String source = line[8];
-            String outcome = line[9];
-            //String referralDate = line[10];
-            //String triageDate = line[11];
-            String assessmentDate = line[12];
-            String firstTreatmentDate = line[13];
-            //String dischargeDate = line[14];
-            //String dischargeReason = line[15];
-            //String cumulativeCAMHS = line[16];
+            String patientId = null;
+            String referralId = null;
+            String age = null;
+            String locality = null;
+            String ethnicity = null;
+            String gender = null;
+            String diagnosis = null;
+            String urgency = null;
+            String source = null;
+            String outcome = null;
+            String referralDate = null;
+            String triageDate = null;
+            String assessmentDate = null;
+            String firstTreatmentDate = null;
+            String dischargeDate = null;
+            String dischargeReason = null;
+            String cumulativeCAMHS = null;
 
-            if (dataSet.contains("Ne-Cor")) {
-                referralDate = line[11];
-                triageDate = line[12];
+            if (dataSet.contains("Worcester")) {
+                patientId = line[1];
+                referralId = line[0];
+                age = line[4];
+                locality = line[17];
+                ethnicity = line[3];
+                gender = line[2];
+                //diagnosis = line[6];
+                urgency = line[7];
+                source = line[6];
+                //outcome = line[9];
+                referralDate = line[5];
+                //triageDate = line[11];
+                //assessmentDate = line[12];
+                firstTreatmentDate = line[8];
                 dischargeDate = line[15];
-            } else if (dataSet.contains("Sunderland")){
-                dischargeDate = line[13];
-                dischargeReason = line[14];
-                cumulativeCAMHS = line[15];
-            } else {
-                referralDate = line[10];
-                triageDate = line[11];
-                dischargeDate = line[14];
-                dischargeReason = line[15];
-                cumulativeCAMHS = line[16];
-            }
+                dischargeReason = line[18];
+                //cumulativeCAMHS = line[16];
 
+            } else {
+
+                patientId = cleanIdentifier(line[0]);
+                referralId = cleanIdentifier(line[1]);
+                age = cleanIdentifier(line[2]);
+                locality = line[3];
+                ethnicity = line[4];
+                gender = line[5];
+                diagnosis = line[6];
+                urgency = line[7];
+                source = line[8];
+                outcome = line[9];
+                //referralDate = line[10];
+                //triageDate = line[11];
+                assessmentDate = line[12];
+                firstTreatmentDate = line[13];
+                //dischargeDate = line[14];
+                //dischargeReason = line[15];
+                //cumulativeCAMHS = line[16];
+
+                if (dataSet.contains("Ne-Cor")) {
+                    referralDate = line[11];
+                    triageDate = line[12];
+                    dischargeDate = line[15];
+                } else if (dataSet.contains("Sunderland")) {
+                    dischargeDate = line[13];
+                    dischargeReason = line[14];
+                    cumulativeCAMHS = line[15];
+                } else {
+                    referralDate = line[10];
+                    triageDate = line[11];
+                    dischargeDate = line[14];
+                    dischargeReason = line[15];
+                    cumulativeCAMHS = line[16];
+                }
+            }
             String patRefId = patientId + "-" + referralId;  // to identify the referral
-            //LOG.info("PAT: " + patRefId);
+            LOG.info("PAT: " + patRefId);
+            ref2pat.put(referralId, patientId);
 
             Item patient = createPatient(patientId, ethnicity, gender);
             Item referral = createReferral(patRefId, referralId, age, locality, diagnosis, urgency,
@@ -315,46 +357,57 @@ public class PorConverter extends BioFileConverter {
 
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
-
-            patientId = cleanIdentifier(line[0]);
-            referralId = cleanIdentifier(line[1]);
-
-            if (dataSet.contains("Na-Cor")) {
-                appointmentDate = line[3];
-                appointmentType = line[4];
-                team = line[5];
-            } else if (dataSet.contains("Stockport")){
+            if (dataSet.contains("Worcester")) {
+                referralId = line[0];
                 appointmentId = cleanIdentifier(line[2]);
                 appointmentDate = line[3];
-                urgency = line[4];
-                appointmentType = line[6];
-                attendance = line[5];
+                ordinal = line[4];
+                appointmentType = line[5];
+                attendance = line[6];
                 team = line[7];
+
             } else {
-                try {
-                appointmentId = line[2];
-                ordinal = line[3];
-                appointmentDate = line[4];
-                urgency = line[5];
-                appointmentType = line[6];
-                attendance = line[7];
-                team = line[8];
-                tier = line[9];
-                }  catch (ArrayIndexOutOfBoundsException exception) {
-                // the sheets have different lenghts
-                continue;
+                patientId = cleanIdentifier(line[0]);
+                referralId = cleanIdentifier(line[1]);
+
+                if (dataSet.contains("Na-Cor")) {
+                    appointmentDate = line[3];
+                    appointmentType = line[4];
+                    team = line[5];
+                } else if (dataSet.contains("Stockport")) {
+                    appointmentId = cleanIdentifier(line[2]);
+                    appointmentDate = line[3];
+                    urgency = line[4];
+                    appointmentType = line[6];
+                    attendance = line[5];
+                    team = line[7];
+                } else {
+                    try {
+                        appointmentId = line[2];
+                        ordinal = line[3];
+                        appointmentDate = line[4];
+                        urgency = line[5];
+                        appointmentType = line[6];
+                        attendance = line[7];
+                        team = line[8];
+                        tier = line[9];
+                    } catch (ArrayIndexOutOfBoundsException exception) {
+                        // the sheets have different lenghts
+                        continue;
+                    }
+
                 }
-
+                // check if patient
+                if (patients.get(patientId) == null) {
+                    LOG.warn("No patient found with identifier: " + patientId);
+                    continue;
+                }
             }
-            // check if patient
-            if (patients.get(patientId) == null) {
-                LOG.warn("No patient found with identifier: " + patientId);
-                continue;
+
+                Item appointment = createAppointment(patientId, referralId, appointmentId, ordinal,
+                        appointmentDate, urgency, appointmentType, attendance, team, tier);
             }
 
-            Item appointment = createAppointment(patientId, referralId, appointmentId, ordinal,
-                    appointmentDate, urgency, appointmentType, attendance, team, tier);
-        }
         //storeReferrals();
         storeAppointments();
     }
@@ -363,7 +416,14 @@ public class PorConverter extends BioFileConverter {
                                    String ordinal, String appointmentDate, String urgency,
                                    String appointmentType, String attendance, String team, String tier)
             throws ObjectStoreException {
+
+        if (patientId == null) {
+            patientId = ref2pat.get(referralId);
+        }
         String patRefId = patientId + "-" + referralId;  // to identify the referral/appointment
+        LOG.info("PATREF CON " + patRefId);
+
+
         Item item = appointments.get(patRefId);
         if (item == null) {
             item = createItem("Appointment");
@@ -394,7 +454,13 @@ public class PorConverter extends BioFileConverter {
         // patientId = RT2550527
         // referralId = 3_155204910
         // contactId = 5_C_2480976  (activity Id)
+        //
+        // worcester:
+        // contactId = 1150471DA
+        //
         // TODO: check if rather do a process just for stockport
+        //   no: cases in the various processes
+        // TODO: merge the last 3 cases
 
         String cleanId = identifier;
         if (identifier.startsWith("RT")) {
@@ -411,6 +477,19 @@ public class PorConverter extends BioFileConverter {
             LOG.info("IIDD-NULL ");
             return null;
         }
+        if (identifier.endsWith("DA")) {
+//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
+            return identifier.replace("DA", "");
+        }
+        if (identifier.endsWith("CA")) {
+//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
+            return identifier.replace("CA", "");
+        }
+        if (identifier.endsWith("GA")) {
+//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
+            return identifier.replace("GA", "");
+        }
+
 
         return identifier;
     }
