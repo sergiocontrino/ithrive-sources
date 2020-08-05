@@ -34,7 +34,7 @@ public class NhsConverter extends BioFileConverter {
 
     private Map<String, Item> patients = new HashMap<>();   // patientId, patient
     private Map<String, Item> referrals = new HashMap<>();  // patRefId, referral
-    private Map<String, Item> appointments = new HashMap<>();  // patRefId, referral
+    private Map<String, Item> contacts = new HashMap<>();  // patRefId, referral
     private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
     private Map<String, Item> dataSets = new HashMap<>();  // datasetName, dataSet
 
@@ -200,8 +200,8 @@ public class NhsConverter extends BioFileConverter {
         }
     }
 
-    private void storeAppointments () throws ObjectStoreException {
-        for (Item item : appointments.values()) {
+    private void storeContacts () throws ObjectStoreException {
+        for (Item item : contacts.values()) {
             Integer pid = store(item);
         }
     }
@@ -242,10 +242,10 @@ public class NhsConverter extends BioFileConverter {
             String dischargeDate = line[10];
             //String dischargeReason = line[11]; repeated in csv
             String cumulativeCAMHS = line[12];
-            String appointmentDate = line[13];
-            String appointmentType = line[14];
-            String appointmentOutcome = line[15];
-            String appointmentTeam = line[16];
+            String contactDate = line[13];
+            String contactType = line[14];
+            String contactOutcome = line[15];
+            String contactTeam = line[16];
 
             // check if patient
             if (patients.get(patientId) == null) {
@@ -270,30 +270,30 @@ public class NhsConverter extends BioFileConverter {
                 LOG.warn("Please check your CONTACT data: no referral " + referralId + " for patient "
                         + patientId +".");
             }
-            Item appointment = createAppointment(patientId, referralId, appointmentDate, appointmentType,
-                    appointmentOutcome, appointmentTeam);
+            Item contact = createContact(patientId, referralId, contactDate, contactType,
+                    contactOutcome, contactTeam);
 
         }
 //        storeReferrals();
-//        storeAppointments();
+//        storeContacts();
     }
 
-    private Item createAppointment (String patientId, String referralId, String appointmentDate,
-                                    String appointmentType, String appointmentOutcome, String appointmentTeam)
+    private Item createContact (String patientId, String referralId, String contactDate,
+                                    String contactType, String contactOutcome, String contactTeam)
             throws ObjectStoreException {
-        String patRefId = patientId + "-" + referralId;  // to identify the referral/appointment
-        Item item = appointments.get(patRefId);
+        String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
+        Item item = contacts.get(patRefId);
         if (item == null) {
-            item = createItem("Appointment");
-            item.setAttributeIfNotNull("appointmentDate", appointmentDate);
-            item.setAttributeIfNotNull("contactType", appointmentType);
-            item.setAttributeIfNotNull("contactOutcome", appointmentOutcome);
-            item.setAttributeIfNotNull("team", appointmentTeam);
+            item = createItem("Contact");
+            item.setAttributeIfNotNull("contactDate", contactDate);
+            item.setAttributeIfNotNull("contactType", contactType);
+            item.setAttributeIfNotNull("contactOutcome", contactOutcome);
+            item.setAttributeIfNotNull("team", contactTeam);
             Item patient = patients.get(patientId);
             if (patient != null) {
                 item.setReference("patient", patient);
             }
-            appointments.put(patRefId, item);
+            contacts.put(patRefId, item);
         }
         return item;
     }
@@ -381,7 +381,7 @@ public class NhsConverter extends BioFileConverter {
         }
 
         storeReferrals();
-        storeAppointments();
+        storeContacts();
 
 
     }
