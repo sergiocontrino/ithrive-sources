@@ -33,6 +33,8 @@ public class PorConverter extends BioFileConverter {
     //
     //private static final String DATASET_TITLE = "Portsmouth";
     private static final String DATA_SOURCE_NAME = "NHS";
+    private static final String SITE_CONTROL = "control";
+    private static final String SITE_ITHRIVE = "accelerator";
     protected static final Logger LOG = Logger.getLogger(PorConverter.class);
 
     private Map<String, Item> patients = new HashMap<>();   // patientId, patient
@@ -43,7 +45,8 @@ public class PorConverter extends BioFileConverter {
     private Map<String, String> ref2pat = new HashMap<>();  // referralId, patientId  (for worcester)
 
     private String dataSetRef = null; // to link patients to sites
-    private String dataSet = null; // to deal with differences in format
+    private String dataSet = null;  // to deal with differences in format
+    private String siteType = null; // {ithrive, control}
 
     /**
      * Constructor
@@ -66,19 +69,31 @@ public class PorConverter extends BioFileConverter {
             LOG.info("Reading file: " + fileName);
 
             // set datasource/dataset
-            if (fileName.contains("NeCor"))
+            if (fileName.contains("NeCor")) {
+                siteType = SITE_CONTROL;
                 dataSet = "Ne-Cor";
-            if (fileName.contains("Portsmouth"))
+            }
+            if (fileName.contains("Portsmouth")) {
                 dataSet = "Portsmouth";
-            if (fileName.contains("Southampton"))
+                siteType = SITE_CONTROL;
+            }
+            if (fileName.contains("Southampton")) {
                 dataSet = "Southampton";
-            if (fileName.contains("Stockport"))
+                siteType = SITE_CONTROL;
+            }
+            if (fileName.contains("Stockport")) {
                 dataSet = "Stockport";
-            if (fileName.contains("Sunderland"))
+                siteType = SITE_ITHRIVE;
+            }
+            if (fileName.contains("Sunderland")) {
                 dataSet = "Sunderland";
-            if (fileName.contains("Worcester"))
+                siteType = SITE_CONTROL;
+            }
+            if (fileName.contains("Worcester")) {
                 dataSet = "Worcester";
-            createDataSet(dataSet);
+                siteType = SITE_CONTROL;
+            }
+            createDataSet(dataSet, siteType);
 
             // process file
             if (fileName.contains("Patient")
@@ -96,20 +111,21 @@ public class PorConverter extends BioFileConverter {
      * create datasource and dataset
      *
      */
-    private void createDataSet(String office)
+    private void createDataSet(String site, String type)
             throws ObjectStoreException {
-        Item dataSource = dataSets.get(office);
+        Item dataSource = dataSets.get(site);
         if (dataSource == null) {
             dataSource = createItem("DataSource");
             dataSource.setAttribute("name", DATA_SOURCE_NAME);
             Item dataSet = createItem("DataSet");
-            dataSet.setAttribute("name", office);
+            dataSet.setAttribute("name", site);
+            dataSet.setAttribute("type", type);
             store(dataSource);
             dataSet.setReference("dataSource", dataSource.getIdentifier());
             store(dataSet);
             dataSetRef = dataSet.getIdentifier();
         }
-            dataSets.put(office, dataSource);
+            dataSets.put(site, dataSource);
         }
 
 
