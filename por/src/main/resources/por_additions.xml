@@ -5,6 +5,7 @@
 <!-- add any <class> elements here -->
 
     <class name="DataSet" is-interface="true">
+        <attribute name="type" type="java.lang.String" />
         <collection name="patients" referenced-type="Patient"
                     reverse-reference="dataSet" />
     </class>
@@ -17,7 +18,7 @@
                     reverse-reference="patients"/>
         <collection name="referrals" referenced-type="Referral"
                     reverse-reference="patient" />
-        <collection name="appointments" referenced-type="Appointment"
+        <collection name="contacts" referenced-type="Contact"
                     reverse-reference="patient" />
         <collection name="diagnostics" referenced-type="Diagnostic"
                     reverse-reference="patient" />
@@ -46,16 +47,16 @@
     -->
         <attribute name="ICD10diagnosis" type="java.lang.String" />
         <reference name="patient" referenced-type="Patient" />
-        <collection name="appointments" referenced-type="Appointment"
+        <collection name="contacts" referenced-type="Contact"
                     reverse-reference="referral" />
         <collection name="diagnostics" referenced-type="Diagnostic"
                     reverse-reference="referral" />
     </class>
 
-    <class name="Appointment" is-interface="true">
+    <class name="Contact" is-interface="true">
         <attribute name="identifier" type="java.lang.Long" />
         <attribute name="ordinal" type="java.lang.Integer" />
-        <attribute name="appointmentDate" type="java.lang.String" />
+        <attribute name="contactDate" type="java.lang.String" />
 <!--        <attribute name="attendance" type="java.lang.String" />
 -->
         <attribute name="contactType" type="java.lang.String" />
@@ -65,7 +66,7 @@
         <attribute name="teamTier" type="java.lang.String" />
         <reference name="patient" referenced-type="Patient" />
         <reference name="referral" referenced-type="Referral"
-                   reverse-reference="appointments"/>
+                   reverse-reference="contacts"/>
     </class>
 
     <class name="Diagnostic" is-interface="true">
@@ -94,12 +95,12 @@
         <attribute name="cumulativeCAMHS" type="java.lang.Integer" />
         <attribute name="diagnosis" type="java.lang.String" />
         <reference name="patient" referenced-type="Patient" />
-        <collection name="appointments" referenced-type="Appointment"
+        <collection name="contacts" referenced-type="Contact"
                     reverse-reference="referral" />
     </class>
 plus
-    <class name="Appointment" is-interface="true">
-        <attribute name="appointmentDate" type="java.util.Date" />
+    <class name="Contact" is-interface="true">
+        <attribute name="contactDate" type="java.util.Date" />
 
 
 -->

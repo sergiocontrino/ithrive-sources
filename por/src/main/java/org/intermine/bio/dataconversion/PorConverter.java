@@ -37,7 +37,7 @@ public class PorConverter extends BioFileConverter {
 
     private Map<String, Item> patients = new HashMap<>();   // patientId, patient
     private Map<String, Item> referrals = new HashMap<>();  // patRefId, referral
-    private Map<String, Item> appointments = new HashMap<>();  // patRefId, appointment
+    private Map<String, Item> contacts = new HashMap<>();  // patRefId, contact
     private Map<String, Item> dataSets = new HashMap<>();  // datasetName, dataSet
     //private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
     private Map<String, String> ref2pat = new HashMap<>();  // referralId, patientId  (for worcester)
@@ -324,8 +324,8 @@ public class PorConverter extends BioFileConverter {
         }
     }
 
-    private void storeAppointments() throws ObjectStoreException {
-        for (Item item : appointments.values()) {
+    private void storeContacts() throws ObjectStoreException {
+        for (Item item : contacts.values()) {
             Integer pid = store(item);
         }
     }
@@ -333,7 +333,7 @@ public class PorConverter extends BioFileConverter {
     private void storeAll() throws ObjectStoreException {
         storePatients();
         storeReferrals();
-        storeAppointments();
+        storeContacts();
     }
 
     private void processContact(Reader reader) throws Exception {
@@ -351,18 +351,18 @@ public class PorConverter extends BioFileConverter {
         LOG.info("PROC CON " + Arrays.toString(header));
 
         // define headers
-        String patientId = null, referralId = null, appointmentId = null, appointmentDate = null,
+        String patientId = null, referralId = null, contactId = null, contactDate = null,
                 ordinal = null, urgency = null,
-                appointmentType = null, attendance = null, team = null, tier = null;
+                contactType = null, attendance = null, team = null, tier = null;
 
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
             if (dataSet.contains("Worcester")) {
                 referralId = line[0];
-                appointmentId = cleanIdentifier(line[2]);
-                appointmentDate = line[3];
+                contactId = cleanIdentifier(line[2]);
+                contactDate = line[3];
                 ordinal = line[4];
-                appointmentType = line[5];
+                contactType = line[5];
                 attendance = line[6];
                 team = line[7];
 
@@ -371,23 +371,23 @@ public class PorConverter extends BioFileConverter {
                 referralId = cleanIdentifier(line[1]);
 
                 if (dataSet.contains("Na-Cor")) {
-                    appointmentDate = line[3];
-                    appointmentType = line[4];
+                    contactDate = line[3];
+                    contactType = line[4];
                     team = line[5];
                 } else if (dataSet.contains("Stockport")) {
-                    appointmentId = cleanIdentifier(line[2]);
-                    appointmentDate = line[3];
+                    contactId = cleanIdentifier(line[2]);
+                    contactDate = line[3];
                     urgency = line[4];
-                    appointmentType = line[6];
+                    contactType = line[6];
                     attendance = line[5];
                     team = line[7];
                 } else {
                     try {
-                        appointmentId = line[2];
+                        contactId = line[2];
                         ordinal = line[3];
-                        appointmentDate = line[4];
+                        contactDate = line[4];
                         urgency = line[5];
-                        appointmentType = line[6];
+                        contactType = line[6];
                         attendance = line[7];
                         team = line[8];
                         tier = line[9];
@@ -404,34 +404,34 @@ public class PorConverter extends BioFileConverter {
                 }
             }
 
-                Item appointment = createAppointment(patientId, referralId, appointmentId, ordinal,
-                        appointmentDate, urgency, appointmentType, attendance, team, tier);
+                Item contact = createContact(patientId, referralId, contactId, ordinal,
+                        contactDate, urgency, contactType, attendance, team, tier);
             }
 
         //storeReferrals();
-        storeAppointments();
+        storeContacts();
     }
 
-    private Item createAppointment(String patientId, String referralId, String appointmentId,
-                                   String ordinal, String appointmentDate, String urgency,
-                                   String appointmentType, String attendance, String team, String tier)
+    private Item createContact(String patientId, String referralId, String contactId,
+                                   String ordinal, String contactDate, String urgency,
+                                   String contactType, String attendance, String team, String tier)
             throws ObjectStoreException {
 
         if (patientId == null) {
             patientId = ref2pat.get(referralId);
         }
-        String patRefId = patientId + "-" + referralId;  // to identify the referral/appointment
+        String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
         LOG.info("PATREF CON " + patRefId);
 
 
-        Item item = appointments.get(patRefId);
+        Item item = contacts.get(patRefId);
         if (item == null) {
-            item = createItem("Appointment");
-            item.setAttributeIfNotNull("identifier", appointmentId);
+            item = createItem("Contact");
+            item.setAttributeIfNotNull("identifier", contactId);
             item.setAttributeIfNotNull("ordinal", ordinal);
-            item.setAttributeIfNotNull("appointmentDate", appointmentDate);
+            item.setAttributeIfNotNull("contactDate", contactDate);
             item.setAttributeIfNotNull("urgency", urgency);
-            item.setAttributeIfNotNull("contactType", appointmentType);
+            item.setAttributeIfNotNull("contactType", contactType);
             item.setAttributeIfNotNull("contactOutcome", attendance);
             item.setAttributeIfNotNull("team", team);
             item.setAttributeIfNotNull("teamTier", tier);
@@ -444,7 +444,7 @@ public class PorConverter extends BioFileConverter {
                 item.setReference("referral", referral);
             }
 
-            appointments.put(patRefId, item);
+            contacts.put(patRefId, item);
         }
         return item;
     }
@@ -575,7 +575,7 @@ public class PorConverter extends BioFileConverter {
         }
 
         storeReferrals();
-        storeAppointments();
+        storeContacts();
 
 
     }
