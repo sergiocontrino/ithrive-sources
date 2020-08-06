@@ -69,6 +69,10 @@ public class PorConverter extends BioFileConverter {
             LOG.info("Reading file: " + fileName);
 
             // set datasource/dataset
+            if (fileName.contains("Lewisham")) {
+                siteType = SITE_CONTROL;
+                dataSet = "Lewisham";
+            }
             if (fileName.contains("NeCor")) {
                 siteType = SITE_CONTROL;
                 dataSet = "Ne-Cor";
@@ -187,7 +191,26 @@ public class PorConverter extends BioFileConverter {
             String dischargeReason = null;
             String cumulativeCAMHS = null;
 
-            if (dataSet.contains("Worcester")) {
+            if (dataSet.contains("Lewisham")) {
+                patientId = line[0];
+                referralId = line[1];
+                age = line[5];
+                locality = line[13];
+                ethnicity = line[2];
+                gender = line[3];
+                diagnosis = line[4];
+                urgency = line[12];
+                source = line[11];
+                outcome = line[15];
+                referralDate = line[6];
+                //triageDate = line[11];
+                assessmentDate = line[7];
+                firstTreatmentDate = line[8];
+                dischargeDate = line[10];
+                dischargeReason = line[14];
+                cumulativeCAMHS = line[18];
+
+            } else if (dataSet.contains("Worcester")) {
                 patientId = line[1];
                 referralId = line[0];
                 age = line[4];
