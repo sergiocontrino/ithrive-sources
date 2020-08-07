@@ -97,6 +97,10 @@ public class PorConverter extends BioFileConverter {
                 dataSet = "Worcester";
                 siteType = SITE_CONTROL;
             }
+            if (fileName.contains("Waltham")) {
+                dataSet = "Waltham Forest";
+                siteType = SITE_ITHRIVE;
+            }
             createDataSet(dataSet, siteType);
 
             // process file
@@ -138,7 +142,8 @@ public class PorConverter extends BioFileConverter {
 
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
-        // format assumption:
+        // format assumption: too many to report.. below the original one for cambridge
+        //
         // Patient ID,Referral ID ,Age at referral,Locality ,Ethnicity,Gender,Diagnosis,
         // Referral routine / urgent ,Referral source,Referral accepted / rejected,Referral date,
         // Triage date,Assessment date,Date of first treatment contact,Discharge date ,
@@ -159,9 +164,6 @@ public class PorConverter extends BioFileConverter {
         // 26127609,31417853,11,,Z,F,,Routine,General Medical Practitioner,Accepted,03/11/15 11:24,
         // ,,,06/06/16 11:51,Discharged - Treatment completed,1,,,,,,,,,,,,,
 
-        // for Ne-Cor:
-        // [10] = period -> skip
-        //
 
         // parse header in case
         String[] header = (String[]) lineIter.next();
@@ -170,10 +172,13 @@ public class PorConverter extends BioFileConverter {
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
 
-            // these can have different positions
-//            String referralDate = null, triageDate = null, dischargeDate = null,
-//                    dischargeReason = null, cumulativeCAMHS = null;
+            // check if empty
+            // (issue with waltham)
+            // TODO? improve
+            if (line[0].equals(null) || line[0].equals(""))
+                continue;
 
+            // TODO: something better..
             String patientId = null;
             String referralId = null;
             String age = null;
@@ -210,6 +215,25 @@ public class PorConverter extends BioFileConverter {
                 dischargeDate = line[10];
                 dischargeReason = line[14];
                 cumulativeCAMHS = line[18];
+
+            } else if (dataSet.contains("Waltham")) {
+                patientId = cleanIdentifier(line[0]);
+                referralId = cleanIdentifier(line[1]);
+                age = cleanIdentifier(line[2]);
+                locality = line[3];
+                ethnicity = line[4];
+                gender = line[5];
+                diagnosis = cleanIdentifier(line[6]);
+                urgency = line[7];
+                source = line[8];
+                outcome = line[9];
+                referralDate = line[10];
+                triageDate = cleanIdentifier(line[11]);
+                assessmentDate = line[12];
+                firstTreatmentDate = line[13];
+                dischargeDate = line[14];
+                dischargeReason = line[15];
+                cumulativeCAMHS = cleanIdentifier(line[16]);
 
             } else if (dataSet.contains("Worcester")) {
                 patientId = line[1];
@@ -267,17 +291,35 @@ public class PorConverter extends BioFileConverter {
                 }
             }
             String patRefId = patientId + "-" + referralId;  // to identify the referral
-            //LOG.info("PAT: " + patRefId);
+            LOG.info("PAT: " + patRefId);
             ref2pat.put(referralId, patientId);
 
             Item patient = createPatient(patientId, ethnicity, gender);
             Item referral = createReferral(patRefId, referralId, age, locality, diagnosis, urgency,
                     source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
                     dischargeDate, dischargeReason, cumulativeCAMHS, patient);
+
+            if (dataSet.contains("Waltham")) {
+                // waltham has contact info in the same sheet
+                String contactDate = cleanIdentifier(line[17]);
+                String contactUrgency = cleanIdentifier(line[18]);
+                String contactType = line[19];
+                String attendance = cleanIdentifier(line[20]);
+                String team = cleanIdentifier(line[21]);
+                String tier = cleanIdentifier(line[22]);
+                String ordinal = line[23];
+                String contactId = null;
+
+                Item contact = createContact(patientId, referralId, contactId, ordinal,
+                        contactDate, contactUrgency, contactType, attendance, outcome, team, tier);
+            }
         }
 
         storeReferrals();
         storePatients();
+        if (dataSet.contains("Waltham")) {
+            storeContacts();
+        }
 
     }
 
@@ -473,7 +515,7 @@ public class PorConverter extends BioFileConverter {
             patientId = ref2pat.get(referralId);
         }
         String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
-        //LOG.info("PATREF CON " + patRefId);
+        LOG.info("PATREF CON " + patRefId);
 
 
         Item item = contacts.get(patRefId);
@@ -516,6 +558,7 @@ public class PorConverter extends BioFileConverter {
         // TODO: merge the last 3 cases
 
         String cleanId = identifier;
+        //LOG.warn("XXX:" + cleanId + "|<-");
         if (identifier.startsWith("RT")) {
 //            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
            return identifier.replace("RT", "");
@@ -526,7 +569,7 @@ public class PorConverter extends BioFileConverter {
             return splitted[splitted.length -1];
         }
 //        LOG.info("IIDD-nil " + identifier);
-        if (identifier.equalsIgnoreCase("NULL")) {
+        if (identifier.contains("NULL")) {
             LOG.info("IIDD-NULL ");
             return null;
         }
@@ -543,6 +586,14 @@ public class PorConverter extends BioFileConverter {
             return identifier.replace("GA", "");
         }
 
+        if (identifier.endsWith("RiO")) { // waltham patientid
+            //LOG.info("RRIO " + cleanId + "->" + identifier.replace("RiO", ""));
+            return identifier.replace("RiO", "");
+        }
+        if (identifier.contains("MH")) { // waltham patientid
+            //LOG.info("RRMM " + cleanId + "->" + identifier.substring(0,identifier.indexOf('M')));
+            return identifier.substring(0,identifier.indexOf('M'));
+        }
 
         return identifier;
     }
