@@ -105,6 +105,7 @@ public class PorConverter extends BioFileConverter {
                     || fileName.contains("Data"))     // sunderland
                 processPatient(new FileReader(f));
             if (fileName.contains("Contact")
+                    || fileName.contains("Outcome")   // lewisham
                     || fileName.contains("Activity")) // stockport
                 processContact(new FileReader(f));
         }
@@ -266,7 +267,7 @@ public class PorConverter extends BioFileConverter {
                 }
             }
             String patRefId = patientId + "-" + referralId;  // to identify the referral
-            LOG.info("PAT: " + patRefId);
+            //LOG.info("PAT: " + patRefId);
             ref2pat.put(referralId, patientId);
 
             Item patient = createPatient(patientId, ethnicity, gender);
@@ -405,6 +406,13 @@ public class PorConverter extends BioFileConverter {
                 attendance = line[6];
                 team = line[7];
 
+            } else if (dataSet.contains("Lewisham")) {
+                patientId = line[0];
+                referralId = line[1];
+                contactId = line[2];
+                contactDate = line[3];
+                outcome = line[4];
+                contactType = line[5];
             } else {
                 patientId = cleanIdentifier(line[0]);
                 referralId = cleanIdentifier(line[1]);
@@ -437,10 +445,15 @@ public class PorConverter extends BioFileConverter {
 
                 }
                 // check if patient
-                if (patients.get(patientId) == null) {
-                    LOG.warn("No patient found with identifier: " + patientId);
-                    continue;
-                }
+//                if (patients.get(patientId) == null) {
+//                    LOG.warn("No patient found with identifier: " + patientId);
+//                    continue;
+//                }
+            }
+            // check if patient
+            if (patients.get(patientId) == null) {
+                LOG.warn("No patient found with identifier: " + patientId);
+                continue;
             }
 
                 Item contact = createContact(patientId, referralId, contactId, ordinal,
@@ -460,7 +473,7 @@ public class PorConverter extends BioFileConverter {
             patientId = ref2pat.get(referralId);
         }
         String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
-        LOG.info("PATREF CON " + patRefId);
+        //LOG.info("PATREF CON " + patRefId);
 
 
         Item item = contacts.get(patRefId);
