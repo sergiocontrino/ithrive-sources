@@ -392,7 +392,7 @@ public class PorConverter extends BioFileConverter {
         // define headers
         String patientId = null, referralId = null, contactId = null, contactDate = null,
                 ordinal = null, urgency = null,
-                contactType = null, attendance = null, team = null, tier = null;
+                contactType = null, attendance = null, outcome = null, team = null, tier = null;
 
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
@@ -444,7 +444,7 @@ public class PorConverter extends BioFileConverter {
             }
 
                 Item contact = createContact(patientId, referralId, contactId, ordinal,
-                        contactDate, urgency, contactType, attendance, team, tier);
+                        contactDate, urgency, contactType, attendance, outcome, team, tier);
             }
 
         //storeReferrals();
@@ -453,7 +453,7 @@ public class PorConverter extends BioFileConverter {
 
     private Item createContact(String patientId, String referralId, String contactId,
                                    String ordinal, String contactDate, String urgency,
-                                   String contactType, String attendance, String team, String tier)
+                                   String contactType, String attendance, String outcome, String team, String tier)
             throws ObjectStoreException {
 
         if (patientId == null) {
@@ -471,7 +471,8 @@ public class PorConverter extends BioFileConverter {
             item.setAttributeIfNotNull("contactDate", contactDate);
             item.setAttributeIfNotNull("urgency", urgency);
             item.setAttributeIfNotNull("contactType", contactType);
-            item.setAttributeIfNotNull("contactOutcome", attendance);
+            item.setAttributeIfNotNull("attendance", attendance);
+            item.setAttributeIfNotNull("contactOutcome", outcome);
             item.setAttributeIfNotNull("team", team);
             item.setAttributeIfNotNull("teamTier", tier);
             Item patient = patients.get(patientId);
