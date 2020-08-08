@@ -71,6 +71,7 @@
     <class name="Diagnostic" is-interface="true">
         <attribute name="assessmentDate" type="java.lang.String" />
         <attribute name="observation" type="java.lang.String" />
+        <attribute name="value" type="java.lang.String" />
         <reference name="patient" referenced-type="Patient"
                    reverse-reference="diagnostics"/>
         <reference name="referral" referenced-type="Referral"
