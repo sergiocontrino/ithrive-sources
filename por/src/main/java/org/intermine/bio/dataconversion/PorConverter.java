@@ -63,45 +63,17 @@ public class PorConverter extends BioFileConverter {
      * {@inheritDoc}
      */
     public void process(Reader reader) throws Exception {
+        //
+        // TODO: sort out the ordering of files (can be avoided? stardardise naming?)
+        //     : merge with the 3 files cases (e.g. cambridge)
+
         File f = getCurrentFile();
         String fileName = getCurrentFile().getName();
         if (fileName.endsWith("csv")) {
             LOG.info("Reading file: " + fileName);
 
             // set datasource/dataset
-            if (fileName.contains("Lewisham")) {
-                siteType = SITE_CONTROL;
-                dataSet = "Lewisham";
-            }
-            if (fileName.contains("NeCor")) {
-                siteType = SITE_CONTROL;
-                dataSet = "Ne-Cor";
-            }
-            if (fileName.contains("Portsmouth")) {
-                dataSet = "Portsmouth";
-                siteType = SITE_CONTROL;
-            }
-            if (fileName.contains("Southampton")) {
-                dataSet = "Southampton";
-                siteType = SITE_CONTROL;
-            }
-            if (fileName.contains("Stockport")) {
-                dataSet = "Stockport";
-                siteType = SITE_ITHRIVE;
-            }
-            if (fileName.contains("Sunderland")) {
-                dataSet = "Sunderland";
-                siteType = SITE_CONTROL;
-            }
-            if (fileName.contains("Worcester")) {
-                dataSet = "Worcester";
-                siteType = SITE_CONTROL;
-            }
-            if (fileName.contains("Waltham")) {
-                dataSet = "Waltham Forest";
-                siteType = SITE_ITHRIVE;
-            }
-            createDataSet(dataSet, siteType);
+            setDataset(fileName);
 
             // process file
             if (fileName.contains("Patient")
@@ -114,32 +86,8 @@ public class PorConverter extends BioFileConverter {
                 processContact(new FileReader(f));
             if (fileName.contains("Outcome"))   // waltham
                 processDiagnosis(new FileReader(f));
-
-
         }
     }
-
-
-    /**
-     * create datasource and dataset
-     */
-    private void createDataSet(String site, String type)
-            throws ObjectStoreException {
-        Item dataSource = dataSets.get(site);
-        if (dataSource == null) {
-            dataSource = createItem("DataSource");
-            dataSource.setAttribute("name", DATA_SOURCE_NAME);
-            Item dataSet = createItem("DataSet");
-            dataSet.setAttribute("name", site);
-            dataSet.setAttribute("type", type);
-            store(dataSource);
-            dataSet.setReference("dataSource", dataSource.getIdentifier());
-            store(dataSet);
-            dataSetRef = dataSet.getIdentifier();
-        }
-        dataSets.put(site, dataSource);
-    }
-
 
     private void processPatient(Reader reader) throws Exception {
 
@@ -329,85 +277,6 @@ public class PorConverter extends BioFileConverter {
 
     }
 
-    private Item createPatient(String patientId, String ethnicity, String gender)
-            throws ObjectStoreException {
-        Item item = patients.get(patientId);
-        if (item == null) {
-            item = createItem("Patient");
-            item.setAttribute("identifier", patientId);
-            if (!ethnicity.isEmpty()) {
-                item.setAttribute("ethnicity", ethnicity);
-            }
-            if (!gender.isEmpty()) {
-                item.setAttribute("gender", gender);
-            }
-            item.setReference("dataSet", dataSetRef);
-            patients.put(patientId, item);
-        }
-        return item;
-    }
-
-    private Item createReferral(String patRefId, String referralId, String age, String locality,
-                                String diagnosis, String urgency, String source, String outcome, String referralDate,
-                                String triageDate, String assessmentDate, String firstTreatmentDate, String dischargeDate,
-                                String dischargeReason, String cumulativeCAMHS, Item patient)
-            throws ObjectStoreException {
-        Item item = referrals.get(patRefId);
-        if (item == null) {
-            item = createItem("Referral");
-            item.setAttribute("identifier", referralId);
-            item.setAttributeIfNotNull("patientAge", age);
-            item.setAttributeIfNotNull("locality", locality);
-            item.setAttributeIfNotNull("ICD10diagnosis", diagnosis);
-            item.setAttributeIfNotNull("urgency", urgency);
-            item.setAttributeIfNotNull("source", source);
-            item.setAttributeIfNotNull("outcome", outcome);
-            item.setAttributeIfNotNull("referralDate", referralDate);
-            item.setAttributeIfNotNull("triageDate", triageDate);
-            item.setAttributeIfNotNull("assessmentDate", assessmentDate);
-            item.setAttributeIfNotNull("firstTreatmentDate", firstTreatmentDate);
-            item.setAttributeIfNotNull("dischargeDate", dischargeDate);
-            item.setAttributeIfNotNull("dischargeReason", dischargeReason);
-            item.setAttributeIfNotNull("cumulativeCAMHS", cumulativeCAMHS);
-
-            if (patient != null) {
-                item.setReference("patient", patient);
-            }
-            referrals.put(patRefId, item);
-        }
-        return item;
-    }
-
-
-    //
-    // TODO: add methods to create items in different order (of loading files..)
-    // for the moment we assume DEMO, CON, DIA
-    //
-
-    private void storePatients() throws ObjectStoreException {
-        for (Item item : patients.values()) {
-            Integer pid = store(item);
-        }
-    }
-
-    private void storeReferrals() throws ObjectStoreException {
-        for (Item item : referrals.values()) {
-            Integer pid = store(item);
-        }
-    }
-
-    private void storeContacts() throws ObjectStoreException {
-        for (Item item : contacts.values()) {
-            Integer pid = store(item);
-        }
-    }
-
-    private void storeAll() throws ObjectStoreException {
-        storePatients();
-        storeReferrals();
-        storeContacts();
-    }
-
     private void processContact(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
@@ -496,99 +365,6 @@ public class PorConverter extends BioFileConverter {
         storeContacts();
     }
 
-    private Item createContact(String patientId, String referralId, String contactId,
-                               String ordinal, String contactDate, String urgency,
-                               String contactType, String attendance, String outcome, String team, String tier)
-            throws ObjectStoreException {
-
-        if (patientId == null) {
-            patientId = ref2pat.get(referralId);
-        }
-        String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
-        LOG.info("PATREF CON " + patRefId);
-
-
-        Item item = contacts.get(patRefId);
-        if (item == null) {
-            item = createItem("Contact");
-            item.setAttributeIfNotNull("identifier", contactId);
-            item.setAttributeIfNotNull("ordinal", ordinal);
-            item.setAttributeIfNotNull("contactDate", contactDate);
-            item.setAttributeIfNotNull("urgency", urgency);
-            item.setAttributeIfNotNull("contactType", contactType);
-            item.setAttributeIfNotNull("attendance", attendance);
-            item.setAttributeIfNotNull("contactOutcome", outcome);
-            item.setAttributeIfNotNull("team", team);
-            item.setAttributeIfNotNull("teamTier", tier);
-            Item patient = patients.get(patientId);
-            Item referral = referrals.get(patRefId);
-            if (patient != null) {
-                item.setReference("patient", patient);
-            }
-            if (referral != null) {
-                item.setReference("referral", referral);
-            }
-
-            contacts.put(patRefId, item);
-        }
-        return item;
-    }
-
-    private String cleanIdentifier(String identifier) {
-        // needed for stockport, e.g.:
-        // patientId = RT2550527
-        // referralId = 3_155204910
-        // contactId = 5_C_2480976  (activity Id)
-        //
-        // worcester:
-        // contactId = 1150471DA
-        //
-        // TODO: check if rather do a process just for stockport
-        //   no: cases in the various processes
-        // TODO: merge the last 3 cases
-
-        String cleanId = identifier;
-        //LOG.warn("XXX:" + cleanId + "|<-");
-        if (identifier.startsWith("RT")) {
-//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
-            return identifier.replace("RT", "");
-        }
-        if (identifier.contains("_")) {
-            String[] splitted = identifier.split("_");
-//            LOG.info("IIDD-US " + cleanId + "->" + splitted[splitted.length -1]);
-            return splitted[splitted.length - 1];
-        }
-//        LOG.info("IIDD-nil " + identifier);
-        if (identifier.contains("NULL")) {
-            LOG.info("IIDD-NULL ");
-            return null;
-        }
-        if (identifier.endsWith("DA")) {
-//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
-            return identifier.replace("DA", "");
-        }
-        if (identifier.endsWith("CA")) {
-//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
-            return identifier.replace("CA", "");
-        }
-        if (identifier.endsWith("GA")) {
-//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
-            return identifier.replace("GA", "");
-        }
-
-        if (identifier.endsWith("RiO")) { // waltham patientid
-            //LOG.info("RRIO " + cleanId + "->" + identifier.replace("RiO", ""));
-            return identifier.replace("RiO", "");
-        }
-        if (identifier.contains("MH")) { // waltham patientid
-            //LOG.info("RRMM " + cleanId + "->" + identifier.substring(0,identifier.indexOf('M')));
-            return identifier.substring(0, identifier.indexOf('M'));
-        }
-
-        return identifier;
-    }
-
-
     private void processDiagnosis(Reader reader) throws Exception {
 
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
@@ -676,6 +452,93 @@ public class PorConverter extends BioFileConverter {
 
     }
 
+    private Item createPatient(String patientId, String ethnicity, String gender)
+            throws ObjectStoreException {
+        Item item = patients.get(patientId);
+        if (item == null) {
+            item = createItem("Patient");
+            item.setAttribute("identifier", patientId);
+            if (!ethnicity.isEmpty()) {
+                item.setAttribute("ethnicity", ethnicity);
+            }
+            if (!gender.isEmpty()) {
+                item.setAttribute("gender", gender);
+            }
+            item.setReference("dataSet", dataSetRef);
+            patients.put(patientId, item);
+        }
+        return item;
+    }
+
+    private Item createReferral(String patRefId, String referralId, String age, String locality,
+                                String diagnosis, String urgency, String source, String outcome, String referralDate,
+                                String triageDate, String assessmentDate, String firstTreatmentDate, String dischargeDate,
+                                String dischargeReason, String cumulativeCAMHS, Item patient)
+            throws ObjectStoreException {
+        Item item = referrals.get(patRefId);
+        if (item == null) {
+            item = createItem("Referral");
+            item.setAttribute("identifier", referralId);
+            item.setAttributeIfNotNull("patientAge", age);
+            item.setAttributeIfNotNull("locality", locality);
+            item.setAttributeIfNotNull("ICD10diagnosis", diagnosis);
+            item.setAttributeIfNotNull("urgency", urgency);
+            item.setAttributeIfNotNull("source", source);
+            item.setAttributeIfNotNull("outcome", outcome);
+            item.setAttributeIfNotNull("referralDate", referralDate);
+            item.setAttributeIfNotNull("triageDate", triageDate);
+            item.setAttributeIfNotNull("assessmentDate", assessmentDate);
+            item.setAttributeIfNotNull("firstTreatmentDate", firstTreatmentDate);
+            item.setAttributeIfNotNull("dischargeDate", dischargeDate);
+            item.setAttributeIfNotNull("dischargeReason", dischargeReason);
+            item.setAttributeIfNotNull("cumulativeCAMHS", cumulativeCAMHS);
+
+            if (patient != null) {
+                item.setReference("patient", patient);
+            }
+            referrals.put(patRefId, item);
+        }
+        return item;
+    }
+
+    private Item createContact(String patientId, String referralId, String contactId,
+                               String ordinal, String contactDate, String urgency,
+                               String contactType, String attendance, String outcome, String team, String tier)
+            throws ObjectStoreException {
+
+        if (patientId == null) {
+            patientId = ref2pat.get(referralId);
+        }
+        String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
+        LOG.info("PATREF CON " + patRefId);
+
+
+        Item item = contacts.get(patRefId);
+        if (item == null) {
+            item = createItem("Contact");
+            item.setAttributeIfNotNull("identifier", contactId);
+            item.setAttributeIfNotNull("ordinal", ordinal);
+            item.setAttributeIfNotNull("contactDate", contactDate);
+            item.setAttributeIfNotNull("urgency", urgency);
+            item.setAttributeIfNotNull("contactType", contactType);
+            item.setAttributeIfNotNull("attendance", attendance);
+            item.setAttributeIfNotNull("contactOutcome", outcome);
+            item.setAttributeIfNotNull("team", team);
+            item.setAttributeIfNotNull("teamTier", tier);
+            Item patient = patients.get(patientId);
+            Item referral = referrals.get(patRefId);
+            if (patient != null) {
+                item.setReference("patient", patient);
+            }
+            if (referral != null) {
+                item.setReference("referral", referral);
+            }
+
+            contacts.put(patRefId, item);
+        }
+        return item;
+    }
+
     private Item createDiagnostic(String patientId, String patRefId, String assessmentDate, String observation,
                                   String value)
             throws ObjectStoreException {
@@ -694,5 +557,142 @@ public class PorConverter extends BioFileConverter {
         return dia;
     }
 
+    /**
+     * create datasource and dataset
+     */
+    private void createDataSet(String site, String type)
+            throws ObjectStoreException {
+        Item dataSource = dataSets.get(site);
+        if (dataSource == null) {
+            dataSource = createItem("DataSource");
+            dataSource.setAttribute("name", DATA_SOURCE_NAME);
+            Item dataSet = createItem("DataSet");
+            dataSet.setAttribute("name", site);
+            dataSet.setAttribute("type", type);
+            store(dataSource);
+            dataSet.setReference("dataSource", dataSource.getIdentifier());
+            store(dataSet);
+            dataSetRef = dataSet.getIdentifier();
+        }
+        dataSets.put(site, dataSource);
+    }
+
+    private void storePatients() throws ObjectStoreException {
+        for (Item item : patients.values()) {
+            Integer pid = store(item);
+        }
+    }
+
+    private void storeReferrals() throws ObjectStoreException {
+        for (Item item : referrals.values()) {
+            Integer pid = store(item);
+        }
+    }
+
+    private void storeContacts() throws ObjectStoreException {
+        for (Item item : contacts.values()) {
+            Integer pid = store(item);
+        }
+    }
+
+    private void storeAll() throws ObjectStoreException {
+        storePatients();
+        storeReferrals();
+        storeContacts();
+    }
+
+    private String cleanIdentifier(String identifier) {
+        // needed for stockport, e.g.:
+        // patientId = RT2550527
+        // referralId = 3_155204910
+        // contactId = 5_C_2480976  (activity Id)
+        //
+        // worcester:
+        // contactId = 1150471DA
+        //
+        // TODO: check if rather do a process just for stockport
+        //   no: cases in the various processes
+        // TODO: merge the last 3 cases
+
+        String cleanId = identifier;
+        //LOG.warn("XXX:" + cleanId + "|<-");
+        if (identifier.startsWith("RT")) {
+//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
+            return identifier.replace("RT", "");
+        }
+        if (identifier.contains("_")) {
+            String[] splitted = identifier.split("_");
+//            LOG.info("IIDD-US " + cleanId + "->" + splitted[splitted.length -1]);
+            return splitted[splitted.length - 1];
+        }
+//        LOG.info("IIDD-nil " + identifier);
+        if (identifier.contains("NULL")) {
+            LOG.info("IIDD-NULL ");
+            return null;
+        }
+        if (identifier.endsWith("DA")) {
+//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
+            return identifier.replace("DA", "");
+        }
+        if (identifier.endsWith("CA")) {
+//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
+            return identifier.replace("CA", "");
+        }
+        if (identifier.endsWith("GA")) {
+//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
+            return identifier.replace("GA", "");
+        }
+
+        if (identifier.endsWith("RiO")) { // waltham patientid
+            //LOG.info("RRIO " + cleanId + "->" + identifier.replace("RiO", ""));
+            return identifier.replace("RiO", "");
+        }
+        if (identifier.contains("MH")) { // waltham patientid
+            //LOG.info("RRMM " + cleanId + "->" + identifier.substring(0,identifier.indexOf('M')));
+            return identifier.substring(0, identifier.indexOf('M'));
+        }
+
+        return identifier;
+    }
+
+    private void setDataset(String fileName) throws ObjectStoreException {
+        if (fileName.contains("Lewisham")) {
+            siteType = SITE_CONTROL;
+            dataSet = "Lewisham";
+        }
+        if (fileName.contains("NeCor")) {
+            siteType = SITE_CONTROL;
+            dataSet = "Ne-Cor";
+        }
+        if (fileName.contains("Portsmouth")) {
+            dataSet = "Portsmouth";
+            siteType = SITE_CONTROL;
+        }
+        if (fileName.contains("Southampton")) {
+            dataSet = "Southampton";
+            siteType = SITE_CONTROL;
+        }
+        if (fileName.contains("Stockport")) {
+            dataSet = "Stockport";
+            siteType = SITE_ITHRIVE;
+        }
+        if (fileName.contains("Sunderland")) {
+            dataSet = "Sunderland";
+            siteType = SITE_CONTROL;
+        }
+        if (fileName.contains("Worcester")) {
+            dataSet = "Worcester";
+            siteType = SITE_CONTROL;
+        }
+        if (fileName.contains("Waltham")) {
+            dataSet = "Waltham Forest";
+            siteType = SITE_ITHRIVE;
+        }
+        if (fileName.contains("Warrington")) {
+            dataSet = "Warrington";
+            siteType = SITE_ITHRIVE;
+        }
+        createDataSet(dataSet, siteType);
+    }
 
 }
