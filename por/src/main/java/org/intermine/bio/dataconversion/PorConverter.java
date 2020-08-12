@@ -44,6 +44,28 @@ public class PorConverter extends BioFileConverter {
     //private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
     private Map<String, String> ref2pat = new HashMap<>();  // referralId, patientId  (for worcester)
 
+//    private Map<String, String> lineRedux = new HashMap<>();  // designed term, value read
+//    private String[] patientStage = {
+//    "patientId",
+//    "referralId",
+//    "age",
+//    "locality",
+//    "ethnicity",
+//    "gender",
+//    "diagnosis",
+//    "urgency",
+//    "source",
+//    "outcome",
+//    "referralDate",
+//    "triageDate",
+//    "assessmentDate",
+//    "firstTreatmentDate",
+//    "dischargeDate",
+//    "dischargeReason",
+//    "cumulativeCAMHS"
+//};
+
+
     private String dataSetRef = null; // to link patients to sites
     private String dataSet = null;  // to deal with differences in format
     private String siteType = null; // {ithrive, control}
@@ -89,7 +111,11 @@ public class PorConverter extends BioFileConverter {
         }
     }
 
-    private void processPatient(Reader reader) throws Exception {
+
+//    private String[] PatientStage = new String[17];
+
+
+     private void processPatient(Reader reader) throws Exception {
 
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
@@ -602,7 +628,7 @@ public class PorConverter extends BioFileConverter {
     }
 
     private String cleanIdentifier(String identifier) {
-        // needed for stockport, e.g.:
+        // stockport, e.g.:
         // patientId = RT2550527
         // referralId = 3_155204910
         // contactId = 5_C_2480976  (activity Id)
@@ -610,45 +636,34 @@ public class PorConverter extends BioFileConverter {
         // worcester:
         // contactId = 1150471DA
         //
-        // TODO: check if rather do a process just for stockport
-        //   no: cases in the various processes
-        // TODO: merge the last 3 cases
+        // waltham:
+        // patientId = 1022464RiO
+        // referralId = 1022464MHRef1 (NB: we could be missing info in the last digit)
+        //
 
-        String cleanId = identifier;
-        //LOG.warn("XXX:" + cleanId + "|<-");
         if (identifier.startsWith("RT")) {
-//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
             return identifier.replace("RT", "");
         }
         if (identifier.contains("_")) {
             String[] splitted = identifier.split("_");
-//            LOG.info("IIDD-US " + cleanId + "->" + splitted[splitted.length -1]);
             return splitted[splitted.length - 1];
         }
-//        LOG.info("IIDD-nil " + identifier);
         if (identifier.contains("NULL")) {
-            LOG.info("IIDD-NULL ");
             return null;
         }
         if (identifier.endsWith("DA")) {
-//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
             return identifier.replace("DA", "");
         }
         if (identifier.endsWith("CA")) {
-//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
             return identifier.replace("CA", "");
         }
         if (identifier.endsWith("GA")) {
-//            LOG.info("IIDD-RT " + cleanId + "->" + identifier.replace("RT", ""));
             return identifier.replace("GA", "");
         }
-
         if (identifier.endsWith("RiO")) { // waltham patientid
-            //LOG.info("RRIO " + cleanId + "->" + identifier.replace("RiO", ""));
             return identifier.replace("RiO", "");
         }
-        if (identifier.contains("MH")) { // waltham patientid
-            //LOG.info("RRMM " + cleanId + "->" + identifier.substring(0,identifier.indexOf('M')));
+        if (identifier.contains("MH")) { // waltham referralid
             return identifier.substring(0, identifier.indexOf('M'));
         }
 
