@@ -34,7 +34,7 @@ public class PorConverter extends BioFileConverter {
     private static final String DATA_SOURCE_NAME = "NHS";
     private static final String SITE_CONTROL = "control";
     private static final String SITE_ITHRIVE = "accelerator";
-    private static final String PAD_CLASS = "PatientAdditionalData";
+    private static final String ADD_CLASS = "AdditionalData";
     private static final String CCD_CLASS = "CumulativeContactData";
     protected static final Logger LOG = Logger.getLogger(PorConverter.class);
 
@@ -530,7 +530,7 @@ public class PorConverter extends BioFileConverter {
                 // e.g.
                 // No,N/A,5,N
                 for (int i = 4; i < 8; i++) {
-                    store(createAdditionalData(patientId, null, PAD_CLASS , header[i], line[i]));
+                    store(createAdditionalData(patientId, null, ADD_CLASS, header[i], line[i]));
                 }
             } else { // the contact file
                 patientId = line[1];
