@@ -22,6 +22,10 @@
                     reverse-reference="patient" />
         <collection name="diagnostics" referenced-type="Diagnostic"
                     reverse-reference="patient" />
+        <collection name="additionalData" referenced-type="PatientAdditionalData"
+                    reverse-reference="patient" />
+        <collection name="cumulativeContactData" referenced-type="CumulativeContactData"
+                    reverse-reference="patient" />
 
     </class>
 
@@ -51,6 +55,8 @@
                     reverse-reference="referral" />
         <collection name="diagnostics" referenced-type="Diagnostic"
                     reverse-reference="referral" />
+        <collection name="cumulativeContactData" referenced-type="CumulativeContactData"
+                    reverse-reference="referral" />
     </class>
 
     <class name="Contact" is-interface="true">
@@ -77,6 +83,23 @@
         <reference name="referral" referenced-type="Referral"
                    reverse-reference="diagnostics"/>
     </class>
+
+    <class name="CumulativeContactData" is-interface="true">
+        <attribute name="name" type="java.lang.String" />
+        <attribute name="value" type="java.lang.String" />
+        <reference name="patient" referenced-type="Patient"
+                   reverse-reference="cumulativeContactData"/>
+        <reference name="referral" referenced-type="Referral"
+                   reverse-reference="cumulativeContactData"/>
+    </class>
+
+    <class name="PatientAdditionalData" is-interface="true">
+        <attribute name="name" type="java.lang.String" />
+        <attribute name="value" type="java.lang.String" />
+        <reference name="patient" referenced-type="Patient"
+                   reverse-reference="additionalData"/>
+    </class>
+
 
     <!-- TODO with dates
     <class name="Referral" is-interface="true">
