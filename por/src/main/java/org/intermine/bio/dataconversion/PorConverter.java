@@ -115,6 +115,8 @@ public class PorConverter extends BioFileConverter {
                 // these have only one file
                 if (fileName.contains("Bexley"))
                     processBexley(new FileReader(f));
+                if (fileName.contains("Luton"))
+                    processLuton(new FileReader(f));
             }
         }
     }
@@ -566,12 +568,10 @@ public class PorConverter extends BioFileConverter {
         else storeReferrals();
     }
 
-
     private void processBexley(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
-        // format assumption: too many to report.. below the original one for cambridge
-        //
+        // format assumption:
         // PASID,ReferralNumber,Ethnicity,Gender,ReferralUrgencyCode,ReferralUrgencyDescription,ReferralID,
         // TeamReferredTo,TeamReferredToDescription,DaysReferralToDischarge,ReferralReceivedDate,
         // ReferralDischargedDate,FirstApptToRef,RefToFirstApptWeeks,Borough,face2faceappt,Nonface2faceappt,
@@ -644,6 +644,90 @@ public class PorConverter extends BioFileConverter {
         storePatients();
         storeReferrals();
     }
+
+    private void processLuton(Reader reader) throws Exception {
+        Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
+
+        // format assumption:
+        // ID,Referral_id,Ethnicity,Gender,Diagnosis,ReferralUrgency,Referral Source,Referral accepted/rejected,
+        // Referral Date,Assessment Date,Date of first treatment contact,Discharge Date,DischargeReason,
+        // Lifetime referrals to CAMHS,Date of contact/appointment,contact type,Attendance,Team at appointment,Service
+        //
+        // e.g.
+        // TH1062894,4,Asian or Asian British - Bangladeshi              ,f,,Routine,
+        // Local Authority Social Services,Accepted,03/02/16,05/02/16 14:30,05/02/16 14:30,28/03/17,
+        // Discharged on professional advice,2,05/02/16 14:30,f2f,Attended,TH CAMHS LBTH,TH
+        //
+
+        // parse header in case
+        String[] header = (String[]) lineIter.next();
+        LOG.info("PROC Luton " + Arrays.toString(header));
+
+        while (lineIter.hasNext()) {
+            String[] line = (String[]) lineIter.next();
+            // check if empty
+            if (line[0].equals(null) || line[0].equals(""))
+                continue;
+
+            // only one file..
+            String patientId = cleanIdentifier(line[0]); //TODO: put prefix in source LT, TH
+            String referralId = cleanIdentifier(line[1]);
+            String age = null;
+            String locality = line[14];
+            String ethnicity = line[2];
+            String gender = line[3];
+            String diagnosis = line[4];
+            String urgency = line[5];
+            String source = line[6];
+            String outcome = line[7];
+            String referralDate = line[8];
+            String triageDate = null;
+            String assessmentDate = cleanIdentifier(line[9]);       //NULL
+            String firstTreatmentDate = cleanIdentifier(line[10]);  //NULL
+            String dischargeDate = cleanIdentifier(line[11]);       //NULL
+            String dischargeReason = cleanIdentifier(line[12]);     //NULL
+            String cumulativeCAMHS = line[13];
+            String contactDate = cleanIdentifier(line[14]);         //NULL
+            String contactType = line[15];
+            String attendance = cleanIdentifier(line[16]);
+            String team = line[17];
+            String tier = line[18];
+
+            Item patient = createPatient(patientId, ethnicity, gender);
+
+            Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
+                    source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
+                    dischargeDate, dischargeReason, cumulativeCAMHS);
+
+            Item contact = createContact(patientId, referralId, null, null,
+                    contactDate, urgency, contactType, attendance, outcome, team, tier);
+
+            /*
+            // create patient additional data
+            int[] looper = {4,7,8,29,30,31,32,33};
+            for (int i = 0; i < looper.length; i++) {
+                store(createAdditionalData(patientId, referralId, ADD_CLASS, header[looper[i]], line[looper[i]]));
+            }
+
+            // create cumulative contact data
+            looper = new int[]{9,13,15,16,17,18};
+            for (int i = 0; i < looper.length; i++) {
+                store(createAdditionalData(patientId, referralId, CCD_CLASS, header[looper[i]], line[looper[i]]));
+            }
+
+            // create diagnostics
+            int[] looperD = {21,24,25,26,27,28};
+            for (int i = 0; i < looperD.length; i++) {
+                store(createDiagnostic(patientId, referralId, null, header[looperD[i]], line[looperD[i]]));
+            }
+
+             */
+        }
+        storePatients();
+        storeReferrals();
+        storeContacts();
+    }
+
 
     private Item createPatient(String patientId, String ethnicity, String gender)
             throws ObjectStoreException {
@@ -834,15 +918,21 @@ public class PorConverter extends BioFileConverter {
         // referralId = 1022464MHRef1 (NB: we could be missing info in the last digit)
         //
 
+        if (identifier.contains("NULL")) {
+            return null;
+        }
         if (identifier.startsWith("RT")) {
             return identifier.replace("RT", "");
+        }
+        if (identifier.startsWith("TH")) {
+            return identifier.replace("TH", "");
+        }
+        if (identifier.startsWith("LT")) {
+            return identifier.replace("LT", "");
         }
         if (identifier.contains("_")) {
             String[] splitted = identifier.split("_");
             return splitted[splitted.length - 1];
-        }
-        if (identifier.contains("NULL")) {
-            return null;
         }
         if (identifier.endsWith("DA")) {
             return identifier.replace("DA", "");
@@ -902,6 +992,10 @@ public class PorConverter extends BioFileConverter {
         }
         if (fileName.contains("Bexley")) {
             dataSet = "Bexley";
+            siteType = SITE_ITHRIVE;
+        }
+        if (fileName.contains("Luton")) {
+            dataSet = "Luton and Tower Hamlet";
             siteType = SITE_ITHRIVE;
         }
         createDataSet(dataSet, siteType);
