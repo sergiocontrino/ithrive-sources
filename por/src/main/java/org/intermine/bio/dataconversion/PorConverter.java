@@ -572,14 +572,21 @@ public class PorConverter extends BioFileConverter {
 
         // format assumption: too many to report.. below the original one for cambridge
         //
-        // Patient ID,Referral ID ,Age at referral,Locality ,Ethnicity,Gender,Diagnosis,
-        // Referral routine / urgent ,Referral source,Referral accepted / rejected,Referral date,
-        // Triage date,Assessment date,Date of first treatment contact,Discharge date ,
-        // Reason for discharge,Lifetime referrals to CAMHS,
+        // PASID,ReferralNumber,Ethnicity,Gender,ReferralUrgencyCode,ReferralUrgencyDescription,ReferralID,
+        // TeamReferredTo,TeamReferredToDescription,DaysReferralToDischarge,ReferralReceivedDate,
+        // ReferralDischargedDate,FirstApptToRef,RefToFirstApptWeeks,Borough,face2faceappt,Nonface2faceappt,
+        // DNA,ProviderCancellations,ICD10CodingScheme,ICD10DiagnosisCode,ICD10DiagnosisDescription,
+        // ICD10DiagnosisStartDate,ICD10DiagnosisEndDate,
+        // NCDSCodingScheme,NCDSDiagnosisCode,NCDSDiagnosisDescription,NCDSDiagnosisStartDate,NCDSDiagnosisEndDate,
+        // PreviousReferralNumber,PreviousTeamReferredTo,PreviousTeamReferredToDescription,
+        // PreviousReferralReceivedDate,PreviousReferralDischargedDate
         //
         // e.g.
-        // 26127609,31417853,11,,Z,F,,Routine,General Medical Practitioner,Accepted,03/11/15 11:24,
-        // ,,,06/06/16 11:51,Discharged - Treatment completed,1,,,,,,,,,,,,,
+        // 1027461,4,White - British,Male,NU,Non Urgent,457487,
+        // BECLAC,Bexley CAMHS LAC,472,01/05/15,15/08/16,20/05/15,3,Bexley,8,NULL,1,2,NULL,NULL,NULL,NULL,NULL,
+        // NCDS,2,"Emotional Disorders, includes OCD, PTSD",27/10/15,NULL,3,
+        // BECLAC,Bexley CAMHS LAC,04/12/08,01/02/10
+        //
 
         // parse header in case
         String[] header = (String[]) lineIter.next();
@@ -591,7 +598,7 @@ public class PorConverter extends BioFileConverter {
             if (line[0].equals(null) || line[0].equals(""))
                 continue;
 
-            // TODO: something better..
+            // only one file..
             String patientId = line[0];
             String referralId = line[6];
             String age = null;
@@ -616,52 +623,27 @@ public class PorConverter extends BioFileConverter {
                     source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
                     dischargeDate, dischargeReason, cumulativeCAMHS);
 
-
             // create patient additional data
-            // Patient_DisabilityFlag,DiagnosisCode_Primary,
-            // Length of treatment from assessment to discharge,Was this patient signposted after discharge?
-            // e.g.
-            // No,N/A,5,N
             int[] looper = {4,7,8,29,30,31,32,33};
             for (int i = 0; i < looper.length; i++) {
                 store(createAdditionalData(patientId, referralId, ADD_CLASS, header[looper[i]], line[looper[i]]));
             }
 
-//            for (int i = 4; i < 8; i++) {
-//                store(createAdditionalData(patientId, null, ADD_CLASS, header[i], line[i]));
-//            }
-
-
             // create cumulative contact data
-            // [FinYear2,Patient_Identif,Age,rerefs,CAMHS referral outcome,] in referral
-            // Routine waiting times for first appt,Emergency waiting times for first appt,
-            // Urgent waiting times for first appt,Was this patient seen for assessment?,
-            // F2FAttends,NonF2FAttends,DNAs,service/NHSCacellation,PatientCacellation,
-            // Was the patient discharged?
-            // e.g.
-            // 2015/16,7,16,1,Discharged treatment completed,N/A,N/A,N/A,N,0,0,0,0,0,Y
-            //
             looper = new int[]{9,13,15,16,17,18};
             for (int i = 0; i < looper.length; i++) {
                 store(createAdditionalData(patientId, referralId, CCD_CLASS, header[looper[i]], line[looper[i]]));
             }
 
-//            for (int i = 15; i < 19; i++) {
-//                store(createAdditionalData(patientId, referralId, CCD_CLASS, header[i], line[i]));
-//            }
-
+            // create diagnostics
             int[] looperD = {21,24,25,26,27,28};
             for (int i = 0; i < looperD.length; i++) {
                 store(createDiagnostic(patientId, referralId, null, header[looperD[i]], line[looperD[i]]));
             }
-
-
-
         }
         storePatients();
         storeReferrals();
     }
-
 
     private Item createPatient(String patientId, String ethnicity, String gender)
             throws ObjectStoreException {
