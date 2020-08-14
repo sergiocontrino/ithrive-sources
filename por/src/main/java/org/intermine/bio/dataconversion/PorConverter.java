@@ -112,6 +112,9 @@ public class PorConverter extends BioFileConverter {
                     processContact(new FileReader(f));
                 if (fileName.contains("Outcome"))   // waltham
                     processDiagnosis(new FileReader(f));
+                // these have only one file
+                if (fileName.contains("Bexley"))
+                    processBexley(new FileReader(f));
             }
         }
     }
@@ -460,7 +463,7 @@ public class PorConverter extends BioFileConverter {
             // 2018/2019,1038393RiO,16,1038393MHSRef11,T3-RB- Tier 3 CAMHS,NHS WALTHAM FOREST CCG,,,210332003323400,
             for (int i = 6; i < 9; i++) {
                 //LOG.info("DDIIAA: " + header[i]);
-                store(createDiagnostic(patientId, patRefId, null, header[i], line[i + 1]));
+                store(createDiagnostic(patientId, referralId, null, header[i], line[i + 1]));
                 //}
             }
 
@@ -564,6 +567,102 @@ public class PorConverter extends BioFileConverter {
     }
 
 
+    private void processBexley(Reader reader) throws Exception {
+        Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
+
+        // format assumption: too many to report.. below the original one for cambridge
+        //
+        // Patient ID,Referral ID ,Age at referral,Locality ,Ethnicity,Gender,Diagnosis,
+        // Referral routine / urgent ,Referral source,Referral accepted / rejected,Referral date,
+        // Triage date,Assessment date,Date of first treatment contact,Discharge date ,
+        // Reason for discharge,Lifetime referrals to CAMHS,
+        //
+        // e.g.
+        // 26127609,31417853,11,,Z,F,,Routine,General Medical Practitioner,Accepted,03/11/15 11:24,
+        // ,,,06/06/16 11:51,Discharged - Treatment completed,1,,,,,,,,,,,,,
+
+        // parse header in case
+        String[] header = (String[]) lineIter.next();
+        LOG.info("PROC PAT " + Arrays.toString(header));
+
+        while (lineIter.hasNext()) {
+            String[] line = (String[]) lineIter.next();
+            // check if empty
+            if (line[0].equals(null) || line[0].equals(""))
+                continue;
+
+            // TODO: something better..
+            String patientId = line[0];
+            String referralId = line[6];
+            String age = null;
+            String locality = line[14];
+            String ethnicity = line[2];
+            String gender = line[3];
+            String diagnosis = line[20];
+            String urgency = line[5];
+            String source = null;
+            String outcome = null;
+            String referralDate = line[10];
+            String triageDate = null;
+            String assessmentDate = null;
+            String firstTreatmentDate = line[12];
+            String dischargeDate = line[11];
+            String dischargeReason = null;
+            String cumulativeCAMHS = null;
+
+            Item patient = createPatient(patientId, ethnicity, gender);
+
+            Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
+                    source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
+                    dischargeDate, dischargeReason, cumulativeCAMHS);
+
+
+            // create patient additional data
+            // Patient_DisabilityFlag,DiagnosisCode_Primary,
+            // Length of treatment from assessment to discharge,Was this patient signposted after discharge?
+            // e.g.
+            // No,N/A,5,N
+            int[] looper = {4,7,8,29,30,31,32,33};
+            for (int i = 0; i < looper.length; i++) {
+                store(createAdditionalData(patientId, referralId, ADD_CLASS, header[looper[i]], line[looper[i]]));
+            }
+
+//            for (int i = 4; i < 8; i++) {
+//                store(createAdditionalData(patientId, null, ADD_CLASS, header[i], line[i]));
+//            }
+
+
+            // create cumulative contact data
+            // [FinYear2,Patient_Identif,Age,rerefs,CAMHS referral outcome,] in referral
+            // Routine waiting times for first appt,Emergency waiting times for first appt,
+            // Urgent waiting times for first appt,Was this patient seen for assessment?,
+            // F2FAttends,NonF2FAttends,DNAs,service/NHSCacellation,PatientCacellation,
+            // Was the patient discharged?
+            // e.g.
+            // 2015/16,7,16,1,Discharged treatment completed,N/A,N/A,N/A,N,0,0,0,0,0,Y
+            //
+            looper = new int[]{9,13,15,16,17,18};
+            for (int i = 0; i < looper.length; i++) {
+                store(createAdditionalData(patientId, referralId, CCD_CLASS, header[looper[i]], line[looper[i]]));
+            }
+
+//            for (int i = 15; i < 19; i++) {
+//                store(createAdditionalData(patientId, referralId, CCD_CLASS, header[i], line[i]));
+//            }
+
+            int[] looperD = {21,24,25,26,27,28};
+            for (int i = 0; i < looperD.length; i++) {
+                store(createDiagnostic(patientId, referralId, null, header[looperD[i]], line[looperD[i]]));
+            }
+
+
+
+        }
+        storePatients();
+        storeReferrals();
+    }
+
+
     private Item createPatient(String patientId, String ethnicity, String gender)
             throws ObjectStoreException {
         Item item = patients.get(patientId);
@@ -654,9 +753,11 @@ public class PorConverter extends BioFileConverter {
         return item;
     }
 
-    private Item createDiagnostic(String patientId, String patRefId, String assessmentDate, String observation,
+    private Item createDiagnostic(String patientId, String referralId, String assessmentDate, String observation,
                                   String value)
             throws ObjectStoreException {
+        String patRefId = patientId + "-" + referralId;
+
         Item referral = referrals.get(patRefId);
         Item patient = patients.get(patientId);
         Item dia = createItem("Diagnostic");
@@ -815,6 +916,10 @@ public class PorConverter extends BioFileConverter {
         }
         if (fileName.contains("Warrington")) {
             dataSet = "Warrington";
+            siteType = SITE_ITHRIVE;
+        }
+        if (fileName.contains("Bexley")) {
+            dataSet = "Bexley";
             siteType = SITE_ITHRIVE;
         }
         createDataSet(dataSet, siteType);
