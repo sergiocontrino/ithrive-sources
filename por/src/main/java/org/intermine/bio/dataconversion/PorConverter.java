@@ -115,6 +115,8 @@ public class PorConverter extends BioFileConverter {
                 // these have only one file
                 if (fileName.contains("Bexley"))
                     processBexley(new FileReader(f));
+                if (fileName.contains("Camden"))
+                    processCamden(new FileReader(f));
                 if (fileName.contains("Luton"))
                     processLuton(new FileReader(f));
                 if (fileName.contains("Norfolk"))
@@ -647,6 +649,130 @@ public class PorConverter extends BioFileConverter {
         storeReferrals();
     }
 
+    private void processCamden(Reader reader) throws Exception {
+        Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
+
+        // format assumption:
+        // ReferralActivityID,PatientID,AgeAtReferral,Ethnicity,Gender,PrimaryDiagnosisList,ReferralPriority,
+        // ReferralSource,AcceptedOrRejected,ReferralDate,ReferralReceivedDate,TriageDate,SecondAttendedAppointment,
+        // AssessmentStart,AssessmentEnd,FirstAttendedAssessmentAppointment,ThirdAttendedAppointment,TreatmentStart,
+        // TreatmentEnd,FirstAttendedTreatmentAppointment,DischargeDate,DischargeReason,ReferralActivityByPatient,
+        // LifetimeReferralsToCAMHS,
+        // Appointment1Date,Appointment1Team,Appointment1ContactType,Appointment1Attendance
+        // [....] up to line Appointment615...
+        //
+        // e.g.
+        //
+        // 62
+        //69,6079,16.1,White - British,Female,,Non Urgent,Other clinical specialty,Accepted,26/09/14,26/09/14,
+        // NA,22/01/15,26/09/14,21/01/15,26/09/14,25/02/15,22/01/15,27/01/16,22/01/15,27/01/16,PATIENT non-attendance,
+        // 2,2,26/09/14,NORTH Service,F2F,Attended,22/01/15,NORTH Service,F2F,Attended,25/02/15,NORTH Service,F2F,
+        // Carer Attended,17/03/15,NORTH Service,F2F,Attended,19/06/15,NORTH Service,F2F,Attended,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        // ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+        //
+
+        // parse header in case
+        String[] header = (String[]) lineIter.next();
+        //LOG.info("PROC PAT " + Arrays.toString(header));
+
+        while (lineIter.hasNext()) {
+            String[] line = (String[]) lineIter.next();
+            // check if empty
+            if (line[0].equals(null) || line[0].equals(""))
+                continue;
+
+            // only one file..
+
+            String patientId = line[1];
+            String referralId = line[0];
+            String age = null;
+            String locality = null;
+            String ethnicity = line[3];
+            String gender = line[4];
+            String diagnosis = line[5];
+            String urgency = line[6];
+            String source = line[7];
+            String outcome = line[8];
+            String referralDate = line[9];
+            String triageDate = line[11];
+            String assessmentDate = null;
+            String firstTreatmentDate = line[19];
+            String dischargeDate = line[20];
+            String dischargeReason = line[21];
+            String cumulativeCAMHS = line[23];
+            // they have ages like 4.2.
+            // rounding to the integer.
+            if (line[2].contains("."))
+                age = line[2].substring(0, line[2].indexOf('.'));
+            else
+                age =line[2];
+
+            Item patient = createPatient(patientId, ethnicity, gender);
+
+            Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
+                    source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
+                    dischargeDate, dischargeReason, cumulativeCAMHS);
+
+            // create patient additional data
+            int[] looper = {12,13,14,15,16,17,18,22};
+            for (int i = 0; i < looper.length; i++) {
+                store(createAdditionalData(patientId, referralId, ADD_CLASS, header[looper[i]], line[looper[i]]));
+            }
+
+            // this should deal with the potential 615 contacts recorded on each line
+            // (4 attributes for each contact)
+            for (int j = 24; j < 24*615; j+=3) {
+                if (line[j].isEmpty()) break; //stop if you find no value
+                String contactDate = line[j];
+                String team = line[j+1];
+                String contactType = line[j+2];
+                String attendance = line[j+3];
+
+                Item contact = createContact(patientId, referralId, null, null,
+                        contactDate, null, contactType, attendance, outcome, team, null);
+            }
+
+//            // create cumulative contact data
+//            looper = new int[]{9,13,15,16,17,18};
+//            for (int i = 0; i < looper.length; i++) {
+//                store(createAdditionalData(patientId, referralId, CCD_CLASS, header[looper[i]], line[looper[i]]));
+//            }
+//
+//            // create diagnostics
+//            int[] looperD = {21,24,25,26,27,28};
+//            for (int i = 0; i < looperD.length; i++) {
+//                store(createDiagnostic(patientId, referralId, null, header[looperD[i]], line[looperD[i]]));
+//            }
+        }
+        storePatients();
+        storeReferrals();
+        storeContacts();
+    }
+
+
+
     private void processLuton(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
@@ -802,26 +928,6 @@ public class PorConverter extends BioFileConverter {
             Item contact = createContact(patientId, referralId, null, null,
                     contactDate, contactUrgency, contactType, attendance, outcome, team, tier);
 
-            /*
-            // create patient additional data
-            int[] looper = {4,7,8,29,30,31,32,33};
-            for (int i = 0; i < looper.length; i++) {
-                store(createAdditionalData(patientId, referralId, ADD_CLASS, header[looper[i]], line[looper[i]]));
-            }
-
-            // create cumulative contact data
-            looper = new int[]{9,13,15,16,17,18};
-            for (int i = 0; i < looper.length; i++) {
-                store(createAdditionalData(patientId, referralId, CCD_CLASS, header[looper[i]], line[looper[i]]));
-            }
-
-            // create diagnostics
-            int[] looperD = {21,24,25,26,27,28};
-            for (int i = 0; i < looperD.length; i++) {
-                store(createDiagnostic(patientId, referralId, null, header[looperD[i]], line[looperD[i]]));
-            }
-
-             */
         }
         storePatients();
         storeReferrals();
