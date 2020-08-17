@@ -30,7 +30,7 @@
     </class>
 
     <class name="Referral" is-interface="true">
-        <attribute name="identifier" type="java.lang.Integer" />
+        <attribute name="identifier" type="java.lang.Long" />
         <attribute name="referralDate" type="java.lang.String" />
         <attribute name="triageDate" type="java.lang.String" />
         <attribute name="assessmentDate" type="java.lang.String" />
