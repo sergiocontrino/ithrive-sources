@@ -117,6 +117,8 @@ public class PorConverter extends BioFileConverter {
                     processBexley(new FileReader(f));
                 if (fileName.contains("Luton"))
                     processLuton(new FileReader(f));
+                if (fileName.contains("Norfolk"))
+                    processNorfolk(new FileReader(f));
             }
         }
     }
@@ -728,6 +730,103 @@ public class PorConverter extends BioFileConverter {
         storeContacts();
     }
 
+    private void processNorfolk(Reader reader) throws Exception {
+        Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
+
+        // format assumption:
+        // PatientID,ReferralID,Ethnicity,Gender,Diagnosis,ClinicalOutcomeMeasure,AgeAtReferral,Locality,
+        // ReferralDate,TriageDate,AssessmentDate,DateOfFirstTreatment,DischargeDate,ReferralSource,
+        // ReferralUrgent/Routine,TeamAtContact,Tier,ReasonForDischarge,CAMHSReferralOutcome,LifetimeReferralsToCAMHS,
+        // DateOfEachAppointment,AttendanceAtEachAppointment,ContactTypeForEachAppointment,
+        // Urgent/routineForEachAppointmen
+        //
+        // e.g.
+        // RMY095954,167977,White - British,Female,,,14,NHS NORWICH CCG,
+        // 10/02/11,,27/02/13,27/02/13,17/02/16,Local Authority Social Services,
+        // ,***Northern  CAMHS,3,CC_RFDISCHOTHEPROV,,2,27/10/11,Attended,F2F,
+        //
+
+        // parse header in case
+        String[] header = (String[]) lineIter.next();
+        LOG.info("PROC Norfolk " + Arrays.toString(header));
+        int lineCount = 1; // in excel line numbers start at 1 including header
+        while (lineIter.hasNext()) {
+            lineCount ++; // line number in the original file
+            String[] line = (String[]) lineIter.next();
+            // check if empty
+            if (line[0].equals(null) || line[0].equals(""))
+                continue;
+
+            // only one file..
+            String patientId = cleanIdentifier(line[0]);
+            if (patientId.contains("/"))
+            {
+                LOG.warn("Unrecognised patient ID " + line[0] + " in line " + lineCount);
+            continue;
+            }
+            String referralId = line[1];
+            if (referralId.contains("E+"))
+            {
+                LOG.warn("Unrecognised referral ID " + line[1] + " in line " + lineCount +
+                        " for patient " + line[0]);
+                continue;
+            }
+            String age = line[6];
+            String locality = line[7];
+            String ethnicity = line[2];
+            String gender = line[3];
+            String diagnosis = line[4];
+            String urgency = line[14];
+            String source = line[13];
+            String outcome = line[5];
+            String referralDate = line[8];
+            String triageDate = line[9];
+            String assessmentDate = line[10];
+            String firstTreatmentDate = line[11];
+            String dischargeDate = line[12];
+            String dischargeReason = line[17];
+            String cumulativeCAMHS = line[19];
+            String contactDate = line[20];
+            String contactType = line[22];
+            String attendance = line[21];
+            String team = line[15];
+            String tier = line[16];
+            String contactUrgency = line[23];
+
+            Item patient = createPatient(patientId, ethnicity, gender);
+
+            Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
+                    source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
+                    dischargeDate, dischargeReason, cumulativeCAMHS);
+
+            Item contact = createContact(patientId, referralId, null, null,
+                    contactDate, contactUrgency, contactType, attendance, outcome, team, tier);
+
+            /*
+            // create patient additional data
+            int[] looper = {4,7,8,29,30,31,32,33};
+            for (int i = 0; i < looper.length; i++) {
+                store(createAdditionalData(patientId, referralId, ADD_CLASS, header[looper[i]], line[looper[i]]));
+            }
+
+            // create cumulative contact data
+            looper = new int[]{9,13,15,16,17,18};
+            for (int i = 0; i < looper.length; i++) {
+                store(createAdditionalData(patientId, referralId, CCD_CLASS, header[looper[i]], line[looper[i]]));
+            }
+
+            // create diagnostics
+            int[] looperD = {21,24,25,26,27,28};
+            for (int i = 0; i < looperD.length; i++) {
+                store(createDiagnostic(patientId, referralId, null, header[looperD[i]], line[looperD[i]]));
+            }
+
+             */
+        }
+        storePatients();
+        storeReferrals();
+        storeContacts();
+    }
 
     private Item createPatient(String patientId, String ethnicity, String gender)
             throws ObjectStoreException {
@@ -930,6 +1029,9 @@ public class PorConverter extends BioFileConverter {
         if (identifier.startsWith("LT")) {
             return identifier.replace("LT", "");
         }
+        if (identifier.startsWith("RMY")) {
+            return identifier.replace("RMY", "");
+        }
         if (identifier.contains("_")) {
             String[] splitted = identifier.split("_");
             return splitted[splitted.length - 1];
@@ -954,13 +1056,41 @@ public class PorConverter extends BioFileConverter {
     }
 
     private void setDataset(String fileName) throws ObjectStoreException {
+        if (fileName.contains("Bexley")) {
+            dataSet = "Bexley";
+            siteType = SITE_ITHRIVE;
+        }
+        if (fileName.contains("Cambridge")) {
+            dataSet = "Cambridge and Peterborough";
+            siteType = SITE_ITHRIVE;
+        }
+        if (fileName.contains("Camden")) {
+            dataSet = "Camden";
+            siteType = SITE_ITHRIVE;
+        }
+        if (fileName.contains("Hertfordshire")) {
+            dataSet = "Hertfordshire";
+            siteType = SITE_ITHRIVE;
+        }
         if (fileName.contains("Lewisham")) {
             siteType = SITE_CONTROL;
             dataSet = "Lewisham";
         }
+        if (fileName.contains("Luton")) {
+            dataSet = "Luton and Tower Hamlet";
+            siteType = SITE_ITHRIVE;
+        }
+        if (fileName.contains("Manchester")) {
+            dataSet = "Manchester and Salford";
+            siteType = SITE_ITHRIVE;
+        }
         if (fileName.contains("NeCor")) {
             siteType = SITE_CONTROL;
-            dataSet = "Ne-Cor";
+            dataSet = "Nene and Corby";
+        }
+        if (fileName.contains("Norfolk")) {
+            dataSet = "Norfolk";
+            siteType = SITE_CONTROL;
         }
         if (fileName.contains("Portsmouth")) {
             dataSet = "Portsmouth";
@@ -974,12 +1104,12 @@ public class PorConverter extends BioFileConverter {
             dataSet = "Stockport";
             siteType = SITE_ITHRIVE;
         }
-        if (fileName.contains("Sunderland")) {
-            dataSet = "Sunderland";
+        if (fileName.contains("Stoke")) {
+            dataSet = "Stoke on Trent";
             siteType = SITE_CONTROL;
         }
-        if (fileName.contains("Worcester")) {
-            dataSet = "Worcester";
+        if (fileName.contains("Sunderland")) {
+            dataSet = "Sunderland";
             siteType = SITE_CONTROL;
         }
         if (fileName.contains("Waltham")) {
@@ -990,14 +1120,11 @@ public class PorConverter extends BioFileConverter {
             dataSet = "Warrington";
             siteType = SITE_ITHRIVE;
         }
-        if (fileName.contains("Bexley")) {
-            dataSet = "Bexley";
-            siteType = SITE_ITHRIVE;
+        if (fileName.contains("Worcester")) {
+            dataSet = "Worcester";
+            siteType = SITE_CONTROL;
         }
-        if (fileName.contains("Luton")) {
-            dataSet = "Luton and Tower Hamlet";
-            siteType = SITE_ITHRIVE;
-        }
+
         createDataSet(dataSet, siteType);
     }
 
