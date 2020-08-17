@@ -680,13 +680,13 @@ public class PorConverter extends BioFileConverter {
             String urgency = line[5];
             String source = line[6];
             String outcome = line[7];
-            String referralDate = line[8];
+            String referralDate = cleanIdentifier(line[8]);
             String triageDate = null;
             String assessmentDate = cleanIdentifier(line[9]);       //NULL
             String firstTreatmentDate = cleanIdentifier(line[10]);  //NULL
             String dischargeDate = cleanIdentifier(line[11]);       //NULL
             String dischargeReason = cleanIdentifier(line[12]);     //NULL
-            String cumulativeCAMHS = line[13];
+            String cumulativeCAMHS = cleanIdentifier(line[13]);
             String contactDate = cleanIdentifier(line[14]);         //NULL
             String contactType = line[15];
             String attendance = cleanIdentifier(line[16]);
@@ -791,7 +791,7 @@ public class PorConverter extends BioFileConverter {
             patientId = ref2pat.get(referralId);
         }
         String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
-        LOG.info("PATREF CON " + patRefId);
+    //    LOG.info("PATREF CON " + patRefId);
 
         Item item = contacts.get(patRefId);
         if (item == null) {
