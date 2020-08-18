@@ -752,7 +752,9 @@ public class PorConverter extends BioFileConverter {
                 String contactType = line[j+2];
                 String attendance = line[j+3];
 
-                Item contact = createContact(patientId, referralId, null, null,
+//                Item contact = createContact(patientId, referralId, null, null,
+//                        contactDate, null, contactType, attendance, outcome, team, null);
+                storeContact(patientId, referralId, null, null,
                         contactDate, null, contactType, attendance, outcome, team, null);
             }
 
@@ -770,7 +772,7 @@ public class PorConverter extends BioFileConverter {
         }
         storePatients();
         storeReferrals();
-        storeContacts();
+       // storeContacts();
     }
 
     private void processStoke(Reader reader) throws Exception {
@@ -852,10 +854,9 @@ LOG.info("PAT " + patientId + "|" + referralId);
                 String tier = line[j+5];
 
                 // we store each of them
-                store(createContact(patientId, referralId, null, null,
-                        contactDate, contactUrgency, contactType, attendance, null, team, tier));
+                storeContact(patientId, referralId, null, null,
+                        contactDate, contactUrgency, contactType, attendance, null, team, tier);
             }
-
         }
         storePatients();
         storeReferrals();
@@ -916,7 +917,7 @@ LOG.info("PAT " + patientId + "|" + referralId);
                     source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
                     dischargeDate, dischargeReason, cumulativeCAMHS);
 
-            Item contact = createContact(patientId, referralId, null, null,
+            storeContact(patientId, referralId, null, null,
                     contactDate, urgency, contactType, attendance, outcome, team, tier);
 
             /*
@@ -942,7 +943,7 @@ LOG.info("PAT " + patientId + "|" + referralId);
         }
         storePatients();
         storeReferrals();
-        storeContacts();
+//        storeContacts();
     }
 
     private void processNorfolk(Reader reader) throws Exception {
@@ -1014,13 +1015,15 @@ LOG.info("PAT " + patientId + "|" + referralId);
                     source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
                     dischargeDate, dischargeReason, cumulativeCAMHS);
 
-            Item contact = createContact(patientId, referralId, null, null,
+//            Item contact = createContact(patientId, referralId, null, null,
+//                    contactDate, contactUrgency, contactType, attendance, outcome, team, tier);
+            storeContact(patientId, referralId, null, null,
                     contactDate, contactUrgency, contactType, attendance, outcome, team, tier);
 
         }
         storePatients();
         storeReferrals();
-        storeContacts();
+//        storeContacts();
     }
 
     private Item createPatient(String patientId, String ethnicity, String gender)
@@ -1111,6 +1114,39 @@ LOG.info("PAT " + patientId + "|" + referralId);
         }
         return item;
     }
+
+    private int storeContact(String patientId, String referralId, String contactId,
+                             String ordinal, String contactDate, String urgency,
+                             String contactType, String attendance, String outcome, String team, String tier)
+            throws ObjectStoreException {
+
+        if (patientId == null) {
+            patientId = ref2pat.get(referralId);
+        }
+        String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
+        //    LOG.info("PATREF CON " + patRefId);
+
+        Item item = createItem("Contact");
+        item.setAttributeIfNotNull("identifier", contactId);
+        item.setAttributeIfNotNull("ordinal", ordinal);
+        item.setAttributeIfNotNull("contactDate", contactDate);
+        item.setAttributeIfNotNull("urgency", urgency);
+        item.setAttributeIfNotNull("contactType", contactType);
+        item.setAttributeIfNotNull("attendance", attendance);
+        item.setAttributeIfNotNull("contactOutcome", outcome);
+        item.setAttributeIfNotNull("team", team);
+        item.setAttributeIfNotNull("teamTier", tier);
+        Item patient = patients.get(patientId);
+        Item referral = referrals.get(patRefId);
+        if (patient != null) {
+            item.setReference("patient", patient);
+        }
+        if (referral != null) {
+            item.setReference("referral", referral);
+        }
+        return store(item);
+    }
+
 
     private Item createDiagnostic(String patientId, String referralId, String assessmentDate, String observation,
                                   String value)
