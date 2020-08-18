@@ -804,7 +804,7 @@ public class PorConverter extends BioFileConverter {
 
         // parse header in case
         String[] header = (String[]) lineIter.next();
-        //LOG.info("PROC PAT " + Arrays.toString(header));
+        LOG.info("PROC STOKE");
 
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
@@ -814,29 +814,23 @@ public class PorConverter extends BioFileConverter {
 
             // only one file..
 
-            String patientId = line[1];
-            String referralId = line[0];
-            String age = null;
-            String locality = null;
-            String ethnicity = line[3];
-            String gender = line[4];
-            String diagnosis = line[5];
-            String urgency = line[6];
-            String source = line[7];
-            String outcome = line[8];
-            String referralDate = line[9];
+            String patientId = line[0];
+            String referralId = line[1];
+            String age = line[2];
+            String locality = line[3];
+            String ethnicity = line[4];
+            String gender = line[5];
+            String diagnosis = line[6];
+            String urgency = line[7];
+            String source = line[8];
+            String outcome = line[9];
+            String referralDate = line[10];
             String triageDate = line[11];
-            String assessmentDate = null;
-            String firstTreatmentDate = line[19];
-            String dischargeDate = line[20];
-            String dischargeReason = line[21];
-            String cumulativeCAMHS = line[23];
-            // they have ages like 4.2.
-            // rounding to the integer.
-            if (line[2].contains("."))
-                age = line[2].substring(0, line[2].indexOf('.'));
-            else
-                age =line[2];
+            String assessmentDate = line[12];
+            String firstTreatmentDate = line[13];
+            String dischargeDate = line[14];
+            String dischargeReason = line[15];
+            String cumulativeCAMHS = line[16];
 
             Item patient = createPatient(patientId, ethnicity, gender);
 
@@ -844,40 +838,27 @@ public class PorConverter extends BioFileConverter {
                     source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
                     dischargeDate, dischargeReason, cumulativeCAMHS);
 
-            // create patient additional data
-            int[] looper = {12,13,14,15,16,17,18,22};
-            for (int i = 0; i < looper.length; i++) {
-                store(createAdditionalData(patientId, referralId, ADD_CLASS, header[looper[i]], line[looper[i]]));
-            }
-
-            // this should deal with the potential 615 contacts recorded on each line
-            // (4 attributes for each contact)
-            for (int j = 24; j < 24*615; j+=3) {
-                if (line[j].isEmpty()) break; //stop if you find no value
+LOG.info("PAT " + patientId + "|" + referralId);
+            // this should deal with the potential 50 contacts recorded on each line
+            // (6 attributes for each contact) limit=18+6X50=318
+            for (int j = 17; j < 317; j+=6) {
+                if (line[j].isEmpty() || line[j].contains("NULL")) break; //stop if you find no value
+                //LOG.info("ooo" + j + "ooo " + line[j]);
                 String contactDate = line[j];
-                String team = line[j+1];
+                String contactUrgency = line[j+1];
                 String contactType = line[j+2];
                 String attendance = line[j+3];
+                String team = line[j+4];
+                String tier = line[j+5];
 
-                Item contact = createContact(patientId, referralId, null, null,
-                        contactDate, null, contactType, attendance, outcome, team, null);
+                // we store each of them
+                store(createContact(patientId, referralId, null, null,
+                        contactDate, contactUrgency, contactType, attendance, null, team, tier));
             }
 
-//            // create cumulative contact data
-//            looper = new int[]{9,13,15,16,17,18};
-//            for (int i = 0; i < looper.length; i++) {
-//                store(createAdditionalData(patientId, referralId, CCD_CLASS, header[looper[i]], line[looper[i]]));
-//            }
-//
-//            // create diagnostics
-//            int[] looperD = {21,24,25,26,27,28};
-//            for (int i = 0; i < looperD.length; i++) {
-//                store(createDiagnostic(patientId, referralId, null, header[looperD[i]], line[looperD[i]]));
-//            }
         }
         storePatients();
         storeReferrals();
-        storeContacts();
     }
 
 
@@ -1126,7 +1107,6 @@ public class PorConverter extends BioFileConverter {
             if (referral != null) {
                 item.setReference("referral", referral);
             }
-
             contacts.put(patRefId, item);
         }
         return item;
