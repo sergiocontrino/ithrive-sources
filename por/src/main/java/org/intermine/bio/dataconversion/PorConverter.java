@@ -45,28 +45,6 @@ public class PorConverter extends BioFileConverter {
     //private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
     private Map<String, String> ref2pat = new HashMap<>();  // referralId, patientId  (for worcester)
 
-//    private Map<String, String> lineRedux = new HashMap<>();  // designed term, value read
-//    private String[] patientStage = {
-//    "patientId",
-//    "referralId",
-//    "age",
-//    "locality",
-//    "ethnicity",
-//    "gender",
-//    "diagnosis",
-//    "urgency",
-//    "source",
-//    "outcome",
-//    "referralDate",
-//    "triageDate",
-//    "assessmentDate",
-//    "firstTreatmentDate",
-//    "dischargeDate",
-//    "dischargeReason",
-//    "cumulativeCAMHS"
-//};
-
-
     private String dataSetRef = null; // to link patients to sites
     private String dataSet = null;  // to deal with differences in format
     private String siteType = null; // {ithrive, control}
@@ -101,6 +79,8 @@ public class PorConverter extends BioFileConverter {
             // process file
             if (fileName.contains("Warrington")) {
                 processWarrington(new FileReader(f));
+            } else if (fileName.contains("Manchester")){
+                processManchester(new FileReader(f));
             } else {
                 if (fileName.contains("Patient")
                         || fileName.contains("Referral")  // ne-cor, worcester
@@ -573,6 +553,115 @@ public class PorConverter extends BioFileConverter {
             storePatients();
         else storeReferrals();
     }
+
+    private void processManchester(Reader reader) throws Exception {
+        Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
+
+        // format assumption: too many to report.. below the original one for cambridge
+        //
+        // Patient ID,Referral ID ,Age at referral,Locality ,Ethnicity,Gender,Diagnosis,
+        // Referral routine / urgent ,Referral source,Referral accepted / rejected,Referral date,
+        // Triage date,Assessment date,Date of first treatment contact,Discharge date ,
+        // Reason for discharge,Lifetime referrals to CAMHS,
+        //
+        // e.g.
+        // 26127609,31417853,11,,Z,F,,Routine,General Medical Practitioner,Accepted,03/11/15 11:24,
+        // ,,,06/06/16 11:51,Discharged - Treatment completed,1,,,,,,,,,,,,,
+
+        Map<String, String> patAge = new HashMap<>();  // patientId, age  (age stored in referral)
+
+
+        // parse header in case
+        String[] header = (String[]) lineIter.next();
+        LOG.info("PROC PAT " + Arrays.toString(header));
+
+        while (lineIter.hasNext()) {
+            String[] line = (String[]) lineIter.next();
+            // check if empty
+            // (issue with waltham) TODO? improve
+            if (line[0].equals(null) || line[0].equals(""))
+                continue;
+
+            // TODO: something better..
+            String patientId = null;
+            String referralId = null;
+            String age = null;
+            String locality = null;
+            String ethnicity = null;
+            String gender = null;
+            String diagnosis = null;
+            String urgency = null;
+            String source = null;
+            String outcome = null;
+            String referralDate = null;
+            String triageDate = null;
+            String assessmentDate = null;
+            String firstTreatmentDate = null;
+            String dischargeDate = null;
+            String dischargeReason = null;
+            String cumulativeCAMHS = null;
+            String patRefId = null;
+
+            String team = null;
+            String attendance = null;
+            String contactType = null;
+            String contactUrgency = null;
+            String contactDate = null;
+            String contactId = null;
+
+            if (getCurrentFile().getName().contains("Patient")) {
+                patientId = line[1];
+                ethnicity = line[4];
+                gender = line[3];
+                patAge.put(patientId,line[2]);
+
+                Item patient = createPatient(patientId, ethnicity, gender);
+
+                // create patient additional data
+                // Patient_DisabilityFlag,DiagnosisCode_Primary,
+                // Length of treatment from assessment to discharge,Was this patient signposted after discharge?
+                // e.g.
+                // No,N/A,5,N
+//                for (int i = 4; i < 8; i++) {
+//                    store(createAdditionalData(patientId, null, ADD_CLASS, header[i], line[i]));
+//                }
+            } else if (getCurrentFile().getName().contains("Referral")) { // the referral file
+                patientId = line[1];
+                referralId = line[3];
+                age = patAge.get(patientId);
+                locality = line[2];
+                referralDate = line[4];
+                assessmentDate = line[5];
+                firstTreatmentDate = line[6];
+                dischargeReason = line[7];
+                dischargeDate = line[8];
+                urgency = line[9];
+                outcome = line[10];
+                source = line[11];
+                diagnosis = line[12];
+
+                Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
+                        source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
+                        dischargeDate, dischargeReason, cumulativeCAMHS);
+
+            } else { // Contact (activity)
+                team = line[0];
+                contactDate = line[1];
+                attendance = line[2];
+                contactType = line[3];
+                contactUrgency = line[4];
+                patientId = line[5];
+                contactId = line[6];
+
+                storeContact(patientId, contactId, contactId, null, contactDate, contactUrgency, contactType,
+                        attendance,null, team, null );
+                            }
+        }
+        if (getCurrentFile().getName().contains("Patient"))
+            storePatients();
+        else if (getCurrentFile().getName().contains("Referral")) storeReferrals();
+    }
+
 
     private void processBexley(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
