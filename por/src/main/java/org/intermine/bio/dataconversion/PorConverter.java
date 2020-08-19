@@ -45,6 +45,10 @@ public class PorConverter extends BioFileConverter {
     //private Map<String, Item> diagnostics = new HashMap<>();  // patRefId, diagnostic
     private Map<String, String> ref2pat = new HashMap<>();  // referralId, patientId  (for worcester)
 
+    private Map<String, String> patAge = new HashMap<>();  // patientId, age  (age stored in referral)
+    //private Map<String, String> patRef = new HashMap<>();  // patientId, referralId (episodeId)
+
+
     private String dataSetRef = null; // to link patients to sites
     private String dataSet = null;  // to deal with differences in format
     private String siteType = null; // {ithrive, control}
@@ -568,7 +572,6 @@ public class PorConverter extends BioFileConverter {
         // 26127609,31417853,11,,Z,F,,Routine,General Medical Practitioner,Accepted,03/11/15 11:24,
         // ,,,06/06/16 11:51,Discharged - Treatment completed,1,,,,,,,,,,,,,
 
-        Map<String, String> patAge = new HashMap<>();  // patientId, age  (age stored in referral)
 
 
         // parse header in case
@@ -613,7 +616,7 @@ public class PorConverter extends BioFileConverter {
                 patientId = line[1];
                 ethnicity = line[4];
                 gender = line[3];
-                patAge.put(patientId,line[2]);
+                patAge.put(patientId, roundAge(line));
 
                 Item patient = createPatient(patientId, ethnicity, gender);
 
@@ -640,6 +643,12 @@ public class PorConverter extends BioFileConverter {
                 source = line[11];
                 diagnosis = line[12];
 
+                if (patients.get(patientId) == null) {
+                    LOG.warn("REF Unknown patient! " + patientId);
+                }
+
+                ref2pat.put(referralId, patientId);
+
                 Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
                         source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
                         dischargeDate, dischargeReason, cumulativeCAMHS);
@@ -652,6 +661,13 @@ public class PorConverter extends BioFileConverter {
                 contactUrgency = line[4];
                 patientId = line[5];
                 contactId = line[6];
+
+                if (patients.get(patientId) == null) {
+                    LOG.warn("CON Unknow patient! " + patientId);
+                }
+                if (referrals.get(contactId) == null) {
+                    LOG.warn("CON Unknow referral! " + contactId);
+                }
 
                 storeContact(patientId, contactId, contactId, null, contactDate, contactUrgency, contactType,
                         attendance,null, team, null );
@@ -813,12 +829,7 @@ public class PorConverter extends BioFileConverter {
             String dischargeDate = line[20];
             String dischargeReason = line[21];
             String cumulativeCAMHS = line[23];
-            // they have ages like 4.2.
-            // rounding to the integer.
-            if (line[2].contains("."))
-                age = line[2].substring(0, line[2].indexOf('.'));
-            else
-                age =line[2];
+            age = roundAge(line);
 
             Item patient = createPatient(patientId, ethnicity, gender);
 
@@ -862,6 +873,16 @@ public class PorConverter extends BioFileConverter {
         storePatients();
         storeReferrals();
        // storeContacts();
+    }
+
+    private String roundAge(String[] line) {
+        String age;// they have ages like 4.2.
+        // rounding to the integer.
+        if (line[2].contains("."))
+            age = line[2].substring(0, line[2].indexOf('.'));
+        else
+            age =line[2];
+        return age;
     }
 
     private void processStoke(Reader reader) throws Exception {
