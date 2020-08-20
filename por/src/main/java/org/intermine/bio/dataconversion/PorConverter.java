@@ -561,18 +561,24 @@ public class PorConverter extends BioFileConverter {
     private void processManchester(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
-        // format assumption: too many to report.. below the original one for cambridge
-        //
-        // Patient ID,Referral ID ,Age at referral,Locality ,Ethnicity,Gender,Diagnosis,
-        // Referral routine / urgent ,Referral source,Referral accepted / rejected,Referral date,
-        // Triage date,Assessment date,Date of first treatment contact,Discharge date ,
-        // Reason for discharge,Lifetime referrals to CAMHS,
-        //
+        // format assumption:
+        // patient file
+        // Location,PatientId,Age,Gender,Ethnicity
         // e.g.
-        // 26127609,31417853,11,,Z,F,,Routine,General Medical Practitioner,Accepted,03/11/15 11:24,
-        // ,,,06/06/16 11:51,Discharged - Treatment completed,1,,,,,,,,,,,,,
-
-
+        // Manchester,92,5.0,Female,Asian or Asian British - Pakistani
+        //
+        // referral file
+        // Service,PatientId,Location,EpisodeID,Date Referral Open,First Attended Diary Date,
+        // Second Attended Contact Date,ReasonForDischarge,Date Of Discharge,ClinicalPriority,Outcome,
+        // ReferringProfessional,Difficulties / Diagnosis,,
+        // e.g.
+        // Central,92,Manchester,92,01/05/08,,,Not known,11/02/16,Routine (4 - 12 weeks),Accepted,GP,,,
+        //
+        // contact file
+        // Service,Diary Date,Attendance,ContactMedium,Urgent / routine for each appt,PatientId,EpisodeID
+        // e.g.
+        // Central,01/04/15,Attended,Face-to-face,Routine,1947,44720
+        //
 
         // parse header in case
         String[] header = (String[]) lineIter.next();
@@ -629,10 +635,10 @@ public class PorConverter extends BioFileConverter {
 //                    store(createAdditionalData(patientId, null, ADD_CLASS, header[i], line[i]));
 //                }
             } else if (getCurrentFile().getName().contains("Referral")) { // the referral file
-                patientId = line[1];
+                patientId = line[2];
                 referralId = line[3];
                 age = patAge.get(patientId);
-                locality = line[2];
+                locality = line[1];
                 referralDate = line[4];
                 assessmentDate = line[5];
                 firstTreatmentDate = line[6];
@@ -643,11 +649,17 @@ public class PorConverter extends BioFileConverter {
                 source = line[11];
                 diagnosis = line[12];
 
+                // one of the files swap columns!
+                if (line[2].contains("Man") || line[2].contains("Sal")) {
+                    patientId = line[1];
+                    locality = line[2];
+                }
+
                 if (patients.get(patientId) == null) {
                     LOG.warn("REF Unknown patient! " + patientId);
                 }
 
-                ref2pat.put(referralId, patientId);
+                //ref2pat.put(referralId, patientId);
 
                 Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
                         source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
@@ -665,9 +677,10 @@ public class PorConverter extends BioFileConverter {
                 if (patients.get(patientId) == null) {
                     LOG.warn("CON Unknow patient! " + patientId);
                 }
-                if (referrals.get(contactId) == null) {
-                    LOG.warn("CON Unknow referral! " + contactId);
-                }
+                // this is always true
+                // if (referrals.get(contactId) == null) {
+                //    LOG.warn("CON Unknow referral! " + contactId);
+                // }
 
                 storeContact(patientId, contactId, contactId, null, contactDate, contactUrgency, contactType,
                         attendance,null, team, null );
