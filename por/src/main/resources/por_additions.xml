@@ -26,6 +26,8 @@
                     reverse-reference="patient" />
         <collection name="cumulativeContactData" referenced-type="CumulativeContactData"
                     reverse-reference="patient" />
+        <collection name="clinicalOutcomes" referenced-type="ClinicalOutcome"
+                    reverse-reference="patient" />
 
     </class>
 
@@ -58,6 +60,8 @@
         <collection name="cumulativeContactData" referenced-type="CumulativeContactData"
                     reverse-reference="referral" />
         <collection name="additionalData" referenced-type="AdditionalData"
+                    reverse-reference="referral" />
+        <collection name="clinicalOutcomes" referenced-type="ClinicalOutcome"
                     reverse-reference="referral" />
     </class>
 
@@ -102,6 +106,17 @@
                    reverse-reference="additionalData"/>
         <reference name="referral" referenced-type="Referral"
                    reverse-reference="additionalData"/>
+    </class>
+
+    <class name="ClinicalOutcome" is-interface="true">
+        <attribute name="episodeId" type="java.lang.String" />
+        <attribute name="ratingDate" type="java.lang.String" />
+        <attribute name="ratingType" type="java.lang.String" />
+        <attribute name="cgasScore" type="java.lang.String" />
+        <reference name="patient" referenced-type="Patient"
+                   reverse-reference="clinicalOutcomes"/>
+        <reference name="referral" referenced-type="Referral"
+                   reverse-reference="clinicalOutcomes"/>
     </class>
 
 
