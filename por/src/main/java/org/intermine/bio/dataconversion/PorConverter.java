@@ -83,6 +83,8 @@ public class PorConverter extends BioFileConverter {
             // process file
             if (fileName.contains("Warrington")) {
                 processWarrington(new FileReader(f));
+            } else if (fileName.contains("Lewisham")){
+                processLewisham(new FileReader(f));
             } else if (fileName.contains("Manchester")){
                 processManchester(new FileReader(f));
             } else {
@@ -91,7 +93,6 @@ public class PorConverter extends BioFileConverter {
                         || fileName.contains("Data"))     // sunderland
                     processPatient(new FileReader(f));
                 if (fileName.contains("Contact")
-                        //  || fileName.contains("Outcome")   // lewisham
                         || fileName.contains("Activity")) // stockport
                     processContact(new FileReader(f));
                 if (fileName.contains("Outcome"))   // waltham
@@ -139,7 +140,7 @@ public class PorConverter extends BioFileConverter {
         // parse header in case
         String[] header = (String[]) lineIter.next();
         LOG.info("PROC PAT " + Arrays.toString(header));
-
+int lineCount = 0;
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
             // check if empty
@@ -167,25 +168,30 @@ public class PorConverter extends BioFileConverter {
             String dischargeReason = null;
             String cumulativeCAMHS = null;
 
-            if (dataSet.contains("Lewisham")) {
-                patientId = line[0];
-                referralId = line[1];
-                age = line[5];
-                locality = line[13];
-                ethnicity = line[2];
-                gender = line[3];
-                diagnosis = line[4];
-                urgency = line[12];
-                source = line[11];
-                outcome = line[15];
-                referralDate = line[6];
-                //triageDate = line[11];
-                assessmentDate = line[7];
-                firstTreatmentDate = line[8];
-                dischargeDate = line[10];
-                dischargeReason = line[14];
-                cumulativeCAMHS = line[18];
-            } else if (dataSet.contains("Waltham")) {
+//            if (dataSet.contains("Lewisham")) {
+//                patientId = line[0];
+//                referralId = line[1];
+//                age = line[5];
+//                locality = line[13];
+//                ethnicity = line[2];
+//                gender = line[3];
+//                diagnosis = line[4];
+//                urgency = line[12];
+//                source = line[11];
+//                referralDate = line[6];
+//                //triageDate = line[11];
+//                assessmentDate = line[7];
+//                firstTreatmentDate = line[8];
+//                dischargeDate = line[10];
+//                if (line.length > 14) {
+//                    dischargeReason = line[14];
+//                    outcome = line[15];
+//                    cumulativeCAMHS = line[18];
+//                } else {
+//                    LOG.warn("truncated line: " + lineCount + ", patId = " + patientId);
+//                }
+//            } else
+                if (dataSet.contains("Waltham")) {
                 patientId = cleanIdentifier(line[0]);
                 referralId = cleanIdentifier(line[1]);
                 age = cleanIdentifier(line[2]);
@@ -279,6 +285,7 @@ public class PorConverter extends BioFileConverter {
                 Item contact = createContact(patientId, referralId, contactId, ordinal,
                         contactDate, contactUrgency, contactType, attendance, outcome, team, tier);
             }
+            lineCount ++;
         }
 
         if (dataSet.contains("Waltham")) {
@@ -287,8 +294,8 @@ public class PorConverter extends BioFileConverter {
             return;
         }
 
-        storeReferrals();
         storePatients();
+        storeReferrals();
 
     }
 
@@ -322,13 +329,13 @@ public class PorConverter extends BioFileConverter {
                 attendance = line[6];
                 team = line[7];
 
-            } else if (dataSet.contains("Lewisham")) {
-                patientId = line[0];
-                referralId = line[1];
-                contactId = line[2];
-                contactDate = line[3];
-                outcome = line[4];
-                contactType = line[5];
+//            } else if (dataSet.contains("Lewisham")) {
+//                patientId = line[0];
+//                referralId = line[1];
+//                contactId = line[2];
+//                contactDate = line[3];
+//                outcome = line[4];
+//                contactType = line[5];
             } else {
                 patientId = cleanIdentifier(line[0]);
                 referralId = cleanIdentifier(line[1]);
@@ -692,6 +699,130 @@ public class PorConverter extends BioFileConverter {
     }
 
 
+    private void processLewisham(Reader reader) throws Exception {
+        Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
+
+        // format assumption:
+        // patient file
+
+        // e.g.
+        //
+        // outcome file
+        //
+        // e.g.
+        //
+        //
+
+        // parse header in case
+        String[] header = (String[]) lineIter.next();
+        LOG.info("PROC LEW " + Arrays.toString(header));
+        int lineCount = 0;
+        while (lineIter.hasNext()) {
+            lineCount ++;
+            String[] line = (String[]) lineIter.next();
+            // check if empty
+            if (line[0].equals(null) || line[0].equals(""))
+            continue;
+
+            // TODO: something better..
+            String patientId = null;
+            String referralId = null;
+            String age = null;
+            String locality = null;
+            String ethnicity = null;
+            String gender = null;
+            String diagnosis = null;
+            String urgency = null;
+            String source = null;
+            String outcome = null;
+            String referralDate = null;
+            String triageDate = null;
+            String assessmentDate = null;
+            String firstTreatmentDate = null;
+            String dischargeDate = null;
+            String dischargeReason = null;
+            String cumulativeCAMHS = null;
+            String patRefId = null;
+
+            String team = null;
+            String attendance = null;
+            String contactType = null;
+            String contactUrgency = null;
+            String contactDate = null;
+            String contactId = null;
+
+            String episodeId = null;
+            String ratingDate = null;
+            String ratingType = null;
+            String cgasScore = null;
+
+
+            if (getCurrentFile().getName().contains("Patient")) {
+                patientId = line[0];
+                referralId = line[1];
+                if (line.length <17) {
+                    LOG.warn("Skipping record with missing data: [" + lineCount + "] " + patientId + "-" + referralId);
+                    continue;
+                }
+                //LOG.info("PAT " + patientId +"-"+ referralId);
+                ethnicity = line[2];
+                gender = line[3];
+                diagnosis = line[4];
+                age = line[5];
+                dischargeDate = line[10];
+                source = line[11];
+                urgency = line[12];
+                locality = line[13];
+                referralDate = line[4];
+                outcome = line[15];
+                cumulativeCAMHS = line[18];
+
+                contactDate = line[19];
+                attendance = line[20] + "-" + line[21];
+                contactType = line[22];
+
+                Item patient = createPatient(patientId, ethnicity, gender);
+
+                Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
+                        source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
+                        dischargeDate, dischargeReason, cumulativeCAMHS);
+
+                // create patient additional data
+                int[] looper = {6,7,8,9,14,16,17};
+                for (int i = 0; i < looper.length; i++) {
+                    store(createAdditionalData(patientId, referralId, ADD_CLASS, header[looper[i]], line[looper[i]]));
+                }
+                storeContact(patientId, referralId, null, null,
+                        contactDate, null, contactType, attendance, outcome, null, null);
+
+            } else { // Outcome
+
+                 patientId = line[0];
+                 referralId = line[1];
+                 episodeId = line[2];
+                 ratingDate = line[3];
+                 ratingType = line[5];
+                 cgasScore = line[4];
+
+                if (patients.get(patientId) == null) {
+                    LOG.warn("OUTCOME: Unknown patient! " + patientId);
+                }
+//                if (referrals.get(referralId) == null) {
+//                    LOG.warn("CON Unknow referral! " + referralId);
+//                }
+                storeOutcome(patientId, referralId, episodeId, ratingDate, ratingType, cgasScore);
+            }
+        }
+        if (getCurrentFile().getName().contains("Outcome")) {
+            LOG.info("PROC LEW PS" + patients.size());
+
+            storePatients();
+            storeReferrals();
+        }
+    }
+
+
+
     private void processBexley(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
@@ -985,7 +1116,6 @@ LOG.info("PAT " + patientId + "|" + referralId);
         storeReferrals();
     }
 
-
     private void processLuton(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
@@ -1155,12 +1285,12 @@ LOG.info("PAT " + patientId + "|" + referralId);
         if (item == null) {
             item = createItem("Patient");
             item.setAttribute("identifier", patientId);
-            if (!ethnicity.isEmpty()) {
-                item.setAttribute("ethnicity", ethnicity);
-            }
-            if (!gender.isEmpty()) {
-                item.setAttribute("gender", gender);
-            }
+//            if (!ethnicity.isEmpty()) {
+                item.setAttributeIfNotNull("ethnicity", ethnicity);
+//            }
+//            if (!gender.isEmpty()) {
+                item.setAttributeIfNotNull("gender", gender);
+//            }
             item.setReference("dataSet", dataSetRef);
             patients.put(patientId, item);
         }
@@ -1247,7 +1377,6 @@ LOG.info("PAT " + patientId + "|" + referralId);
             patientId = ref2pat.get(referralId);
         }
         String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
-        //    LOG.info("PATREF CON " + patRefId);
 
         Item item = createItem("Contact");
         item.setAttributeIfNotNull("identifier", contactId);
@@ -1267,6 +1396,32 @@ LOG.info("PAT " + patientId + "|" + referralId);
         if (referral != null) {
             item.setReference("referral", referral);
         }
+        return store(item);
+    }
+
+    private int storeOutcome(String patientId, String referralId, String episodeId,
+                             String ratingDate, String ratingType, String cgasScore)
+            throws ObjectStoreException {
+
+//        if (patientId == null) {
+//            patientId = ref2pat.get(referralId);
+//        }
+        String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
+
+        Item item = createItem("ClinicalOutcome");
+        item.setAttributeIfNotNull("episodeId", episodeId);
+        item.setAttributeIfNotNull("ratingDate", ratingDate);
+        item.setAttributeIfNotNull("ratingType", ratingType);
+        item.setAttributeIfNotNull("cgasScore", cgasScore);
+
+        Item patient = createPatient(patientId, null, null);
+        item.setReference("patient", patient);
+
+        Item referral = referrals.get(patRefId);
+        if (referral != null) {
+            item.setReference("referral", referral);
+        }
+
         return store(item);
     }
 
