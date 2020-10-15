@@ -1564,10 +1564,11 @@ public class PorConverter extends BioFileConverter {
             dataSet = "Bexley";
             siteType = SITE_ITHRIVE;
         }
-        if (fileName.contains("Cambridge")) {
-            dataSet = "Cambridge and Peterborough";
-            siteType = SITE_ITHRIVE;
-        }
+// TODO: mv cambridge parser here
+//        if (fileName.contains("Cambridge")) {
+//            dataSet = "Cambridge and Peterborough";
+//            siteType = SITE_ITHRIVE;
+//        }
         if (fileName.contains("Camden")) {
             dataSet = "Camden";
             siteType = SITE_ITHRIVE;

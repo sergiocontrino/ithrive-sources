@@ -47,7 +47,7 @@ public class NhsConverter extends BioFileConverter {
      * @param model  the Model
      */
     public NhsConverter(ItemWriter writer, Model model) {
-        super(writer, model, DATA_SOURCE_NAME, DATASET_TITLE, null);
+        super(writer, model, null, DATASET_TITLE, null);
     }
 
     @Override
@@ -124,6 +124,7 @@ public class NhsConverter extends BioFileConverter {
             dataSource.setAttribute("name", DATA_SOURCE_NAME);
             Item dataSet = createItem("DataSet");
             dataSet.setAttribute("name", office);
+            dataSet.setAttribute("type", "accelerator");
             store(dataSource);
             dataSet.setReference("dataSource", dataSource.getIdentifier());
             store(dataSet);
