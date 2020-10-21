@@ -124,6 +124,8 @@ public class PorConverter extends BioFileConverter {
                 processWarrington(new FileReader(f));
             } else if (fileName.contains("Lewisham")) {
                 processLewisham(new FileReader(f));
+            } else if (fileName.contains("Hertfordshire")) {
+                processHerts(new FileReader(f));
             } else if (fileName.contains("Manchester")) {
                 processManchester(new FileReader(f));
             } else {
@@ -714,6 +716,127 @@ public class PorConverter extends BioFileConverter {
         else if (getCurrentFile().getName().contains("Referral")) storeReferrals();
     }
 
+    private void processHerts(Reader reader) throws Exception {
+        Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
+
+        // format assumption:
+        // referral file
+        // PatientID,ReferralID,AgeAtReferral,Locality,Ethnicity,Gender,ReferralPriority,ReferralSource,ReferralStatus,
+        // ReferralDate,TriageDate,AssessmentDate,TreatmentStartDate,DischargeDate,ReasonForDischarge,
+        // LifeTimeCAMHSReferralsLocation,PatientId,Age,Gender,Ethnicity
+        // e.g.
+        // 25,139501,15,East & South East,A,1,Routine,TEAM,Accepted,16/10/14,NULL,04/11/14,04/11/14,25/02/16,,2
+        //
+        // contact file
+        // ReferralID,DateOfContact,RoutineUrgentAppointment,ContactType,AttendanceType,TeamName,TierOfAppointmentTeam
+        // e.g.
+        // 139501,NULL,NULL,NULL,NULL,NULL,NULL^M260503,20/07/16,,TELEPHONE,ATTENDED,CAMHS CATT,Tier3^M260503,21/07/16,
+        // ,FACE TO FACE,ATTENDED,CAMHS CATT,Tier3
+        //
+        // outcome file
+        // PatientID,ReferralID,ActualDate,RAWScore,AssName,SNOMED,Scale,AgeAtAssessment,Grade,Gender,Score,Notes,
+        // FiscalYear,FirstOrLastAssInPeriod
+        // e.g.
+        // 60,228286,16/06/16,3,SDQ-S11-17,718477007,11-17yrs Self Rated Impact,16,N/A,1,3,,2017,FirstAssessmentinFY
+        //
+        // diagnosis file
+        // ClientId,ReferralId,DateOfDiagnosis,Diagnosis,DiagnosisDescription,CodingSignificance
+        // e.g.
+        // 83,343805,11/10/17,F60.3,F60.3 - EMOTIONALLY UNSTABLE PERSONALITY DISORDER,
+        //
+
+
+        // parse header in case
+        String[] header = (String[]) lineIter.next();
+        LOG.info("PROC PAT " + Arrays.toString(header));
+
+        while (lineIter.hasNext()) {
+            String[] line = (String[]) lineIter.next();
+            // check if empty
+            // (issue with waltham) TODO? improve
+            if (line[0].equals(null) || line[0].equals(""))
+                continue;
+
+            // TODO: something better..
+            String patientId = null;
+            String referralId = null;
+            String age = null;
+            String locality = null;
+            String ethnicity = null;
+            String gender = null;
+            String diagnosis = null;
+            String urgency = null;
+            String source = null;
+            String outcome = null;
+            String referralDate = null;
+            String triageDate = null;
+            String assessmentDate = null;
+            String firstTreatmentDate = null;
+            String dischargeDate = null;
+            String dischargeReason = null;
+            String cumulativeCAMHS = null;
+            //String patRefId = null;
+
+            String team = null;
+            String attendance = null;
+            String contactType = null;
+            String contactUrgency = null;
+            String contactDate = null;
+            String tier = null;
+
+            if (getCurrentFile().getName().contains("Referral")) {
+                patientId = line[0];
+                referralId = line[1];
+                age = cleanIdentifier(line[2]);
+                locality = line[3];
+                ethnicity = line[4];
+                gender = line[5];
+                urgency = line[6];
+                source = line[7];
+                outcome = line[8];
+                referralDate = line[9];
+                triageDate = line[10];
+                assessmentDate = line[11];
+                firstTreatmentDate = line[12];
+                dischargeDate = line[13];
+                dischargeReason = line[14];
+                cumulativeCAMHS = cleanIdentifier(line[15]);
+
+                ref2pat.put(referralId, patientId);
+
+                Item patient = createPatient(patientId, ethnicity, gender);
+
+                Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
+                        source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
+                        dischargeDate, dischargeReason, cumulativeCAMHS);
+
+            } else if (getCurrentFile().getName().contains("Contact")) { // the referral file
+                referralId = line[0];
+                contactDate = line[1];
+                contactUrgency = line[2];
+                contactType = line[3];
+                attendance = line[4];
+                team = line[5];
+                tier = line[6];
+
+//                patientId = ref2pat.get(referralId);
+//
+//                if (patientId == null) {
+//                    LOG.warn("CON Unknow patient! " + patientId);
+//                } else {
+                    storeContact(patientId, referralId, contactId, null, contactDate, contactUrgency, contactType,
+                            attendance, null, team, tier);
+//                }
+            } else { // Contact (activity)
+                LOG.info("TODO outcomes and diagnosis");
+            }
+        }
+        if (getCurrentFile().getName().contains("Referral")) {
+            storePatients();
+            storeReferrals();
+        }
+        //else if (getCurrentFile().getName().contains("Contact")) storeContacts();
+    }
 
     private void processLewisham(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
