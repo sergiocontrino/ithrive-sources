@@ -784,6 +784,20 @@ public class PorConverter extends BioFileConverter {
             String contactDate = null;
             String tier = null;
 
+            // clinical outcomes
+            // NB: to check with curators
+            String ratingDate = null;
+            String rawScore = null;
+            String assName = null;
+        String snomed = null;
+        String scale = null;
+        String ageAtAssessment = null;
+        String grade = null;
+        String score = null;
+        String note = null;
+        String fiscalYear = null;
+        String firstOrLast = null;
+
             // diagnosis:  using diagnostics for now
 
 
@@ -832,8 +846,26 @@ public class PorConverter extends BioFileConverter {
                 for (int i = 0; i < looper.length; i++) {
                     store(createDiagnostic(patientId, referralId, assessmentDate, header[looper[i]], line[looper[i]]));
                 }
-            } else { // the last file (outcomes)
-                LOG.debug("TODO outcomes and diagnosis");
+            } else if (getCurrentFile().getName().contains("Outcome")) { // the last file
+                patientId = line[0];
+                referralId = line[1];
+                ratingDate = line[2];
+                rawScore = line[3];
+                assName = line[4];
+                snomed = line[5];
+                scale = line[6];
+                ageAtAssessment = line[7];
+                grade = line[8];
+                score = line[10];
+                note = line[11];
+                fiscalYear = line[12];
+                firstOrLast = line[13];
+
+                storeOutcome(patientId, referralId, ratingDate, rawScore, assName, snomed, scale, ageAtAssessment,
+                        grade, score, note, fiscalYear, firstOrLast );
+
+            } else { // unknown file name
+                LOG.warn("UNKNOWN file name: " + getCurrentFile().getName());
             }
         }
         if (getCurrentFile().getName().contains("Referral")) {
@@ -1538,6 +1570,38 @@ public class PorConverter extends BioFileConverter {
         item.setAttributeIfNotNull("ratingDate", ratingDate);
         item.setAttributeIfNotNull("ratingType", ratingType);
         item.setAttributeIfNotNull("cgasScore", cgasScore);
+
+        Item patient = createPatient(patientId, null, null);
+        item.setReference("patient", patient);
+
+        Item referral = referrals.get(patRefId);
+        if (referral != null) {
+            item.setReference("referral", referral);
+        }
+
+        return store(item);
+    }
+
+    private int storeOutcome(String patientId, String referralId, String ratingDate, String rawScore,
+                             String assName, String snomed, String scale, String ageAtAssessment, String grade,
+                             String score, String note, String fiscalYear, String firstOrLast)
+            throws ObjectStoreException {
+
+        String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
+
+        Item item = createItem("ClinicalOutcome");
+        item.setAttributeIfNotNull("ratingDate", ratingDate);
+        item.setAttributeIfNotNull("rawScore", rawScore);
+        item.setAttributeIfNotNull("assName", assName);
+        item.setAttributeIfNotNull("snomed", snomed);
+        item.setAttributeIfNotNull("scale", scale);
+        item.setAttributeIfNotNull("ageAtAssessment", ageAtAssessment);
+        item.setAttributeIfNotNull("grade", grade);
+        item.setAttributeIfNotNull("score", score);
+        item.setAttributeIfNotNull("note", note);
+        item.setAttributeIfNotNull("fiscalYear", fiscalYear);
+        item.setAttributeIfNotNull("firstOrLast", firstOrLast);
+
 
         Item patient = createPatient(patientId, null, null);
         item.setReference("patient", patient);

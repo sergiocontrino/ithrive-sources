@@ -113,6 +113,18 @@
         <attribute name="ratingDate" type="java.lang.String" />
         <attribute name="ratingType" type="java.lang.String" />
         <attribute name="cgasScore" type="java.lang.String" />
+        <!-- added for Herts -->
+        <attribute name="rawScore" type="java.lang.String" />
+        <attribute name="assName" type="java.lang.String" />
+        <attribute name="snomed" type="java.lang.String" />
+        <attribute name="scale" type="java.lang.String" />
+        <attribute name="ageAtAssessment" type="java.lang.String" />
+        <attribute name="grade" type="java.lang.String" />
+        <attribute name="score" type="java.lang.String" />
+        <attribute name="note" type="java.lang.String" />
+        <attribute name="fiscalYear" type="java.lang.String" />
+        <attribute name="firstOrLast" type="java.lang.String" />
+
         <reference name="patient" referenced-type="Patient"
                    reverse-reference="clinicalOutcomes"/>
         <reference name="referral" referenced-type="Referral"
