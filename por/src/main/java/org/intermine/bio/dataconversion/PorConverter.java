@@ -775,14 +775,17 @@ public class PorConverter extends BioFileConverter {
             String dischargeDate = null;
             String dischargeReason = null;
             String cumulativeCAMHS = null;
-            //String patRefId = null;
 
+            // contact
             String team = null;
             String attendance = null;
             String contactType = null;
             String contactUrgency = null;
             String contactDate = null;
             String tier = null;
+
+            // diagnosis:  using diagnostics for now
+
 
             if (getCurrentFile().getName().contains("Referral")) {
                 patientId = line[0];
@@ -810,7 +813,7 @@ public class PorConverter extends BioFileConverter {
                         source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
                         dischargeDate, dischargeReason, cumulativeCAMHS);
 
-            } else if (getCurrentFile().getName().contains("Contact")) { // the referral file
+            } else if (getCurrentFile().getName().contains("Contact")) { // the contact file
                 referralId = line[0];
                 contactDate = line[1];
                 contactUrgency = line[2];
@@ -819,16 +822,18 @@ public class PorConverter extends BioFileConverter {
                 team = line[5];
                 tier = line[6];
 
-//                patientId = ref2pat.get(referralId);
-//
-//                if (patientId == null) {
-//                    LOG.warn("CON Unknow patient! " + patientId);
-//                } else {
                     storeContact(patientId, referralId, contactId, null, contactDate, contactUrgency, contactType,
                             attendance, null, team, tier);
-//                }
-            } else { // Contact (activity)
-                LOG.info("TODO outcomes and diagnosis");
+            } else if (getCurrentFile().getName().contains("Diagnosis")) { // the 3rd file
+                patientId = line[0];
+                referralId = line[1];
+                assessmentDate = line[2];
+                int[] looper = {3, 4, 5};
+                for (int i = 0; i < looper.length; i++) {
+                    store(createDiagnostic(patientId, referralId, assessmentDate, header[looper[i]], line[looper[i]]));
+                }
+            } else { // the last file (outcomes)
+                LOG.debug("TODO outcomes and diagnosis");
             }
         }
         if (getCurrentFile().getName().contains("Referral")) {
@@ -1494,6 +1499,7 @@ public class PorConverter extends BioFileConverter {
 
         if (patientId == null) {
             patientId = ref2pat.get(referralId);
+
         }
         String patRefId = patientId + "-" + referralId;  // to identify the referral/contact
 
