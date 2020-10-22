@@ -84,6 +84,9 @@
         <attribute name="assessmentDate" type="java.lang.String" />
         <attribute name="observation" type="java.lang.String" />
         <attribute name="value" type="java.lang.String" />
+        <attribute name="measure" type="java.lang.String" />
+        <attribute name="measureType" type="java.lang.String" />
+
         <reference name="patient" referenced-type="Patient"
                    reverse-reference="diagnostics"/>
         <reference name="referral" referenced-type="Referral"
@@ -129,6 +132,8 @@
                    reverse-reference="clinicalOutcomes"/>
         <reference name="referral" referenced-type="Referral"
                    reverse-reference="clinicalOutcomes"/>
+        <!-- added for Salford -->
+        <collection name="diagnostics" referenced-type="Diagnostic" />
     </class>
 
 
