@@ -38,6 +38,13 @@ public class PorConverter extends BioFileConverter {
     private static final String CCD_CLASS = "CumulativeContactData";
     protected static final Logger LOG = Logger.getLogger(PorConverter.class);
 
+    private static final String LUTON = "Luton";
+    private static final String TOWER = "Tower Hamlet";
+    private static final String NORFOLK = "Norfolk";
+    private static final String SUFFOLK = "Suffolk";
+
+
+
     private Map<String, Item> patients = new HashMap<>();   // patientId, patient
     private Map<String, Item> referrals = new HashMap<>();  // patRefId, referral
     private Map<String, Item> contacts = new HashMap<>();  // patRefId, contact
@@ -72,6 +79,7 @@ public class PorConverter extends BioFileConverter {
     String dischargeDate = null;
     String dischargeReason = null;
     String cumulativeCAMHS = null;
+    String site = null;
 
     // contact
     String team = null;
@@ -1439,7 +1447,7 @@ public class PorConverter extends BioFileConverter {
                 continue;
 
             // only one file..
-            String patientId = cleanIdentifier(line[0]); //TODO: put prefix in source LT, TH
+            String patientId = line[0]; //TODO: put prefix in source LT, TH
             String referralId = cleanIdentifier(line[1]);
             String age = null;
             String locality = line[14];
@@ -1461,8 +1469,9 @@ public class PorConverter extends BioFileConverter {
             String attendance = cleanIdentifier(line[16]);
             String team = line[17];
             String tier = line[18];
+            String site = getSite(patientId);
 
-            Item patient = createPatient(patientId, ethnicity, gender);
+            Item patient = createPatient(patientId, ethnicity, gender, site);
 
             Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
                     source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
@@ -1497,6 +1506,19 @@ public class PorConverter extends BioFileConverter {
 //        storeContacts();
     }
 
+    private String getSite(String s) {
+        if (s.startsWith("LT")) return LUTON;     // ds: Luton, s:patientId
+        if (s.startsWith("TH")) return TOWER;
+        if (s.toLowerCase().contains("suffolk")) return SUFFOLK;   // ds: Norfolk, s: locality
+        if (s.toLowerCase().contains("norfolk")) return NORFOLK;
+        if (s.toLowerCase().contains("norwich")) return NORFOLK;
+        if (s.toLowerCase().contains("yarmouth")) return NORFOLK;
+
+        return null;
+    }
+
+    ;
+
     private void processNorfolk(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
@@ -1525,11 +1547,11 @@ public class PorConverter extends BioFileConverter {
                 continue;
 
             // only one file..
-            String patientId = cleanIdentifier(line[0]);
-            if (patientId.contains("/")) {
-                LOG.warn("Unrecognised patient ID " + line[0] + " in line " + lineCount);
-                continue;
-            }
+            String patientId = line[0];
+//            if (patientId.contains("/")) {
+//                LOG.warn("Unrecognised patient ID " + line[0] + " in line " + lineCount);
+//                continue;
+//            }
             String referralId = line[1];
             if (referralId.contains("E+")) {
                 LOG.warn("Unrecognised referral ID " + line[1] + " in line " + lineCount +
@@ -1537,7 +1559,7 @@ public class PorConverter extends BioFileConverter {
                 continue;
             }
             String age = line[6];
-            String locality = line[7];
+            String locality = getSite(line[7]);
             String ethnicity = line[2];
             String gender = line[3];
             String diagnosis = line[4];
@@ -1558,7 +1580,11 @@ public class PorConverter extends BioFileConverter {
             String tier = line[16];
             String contactUrgency = line[23];
 
-            Item patient = createPatient(patientId, ethnicity, gender);
+            if (locality == null) {
+                LOG.warn(dataSet + " - wrong site for patient " + patientId + ": " + line[7]);
+            }
+
+            Item patient = createPatient(patientId, ethnicity, gender, locality);
 
             Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
                     source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
@@ -1575,23 +1601,35 @@ public class PorConverter extends BioFileConverter {
 //        storeContacts();
     }
 
+    private Item createPatient(String patientId, String ethnicity, String gender, String site)
+            throws ObjectStoreException {
+        Item item = patients.get(patientId);
+        if (item == null) {
+            item = createItem("Patient");
+            item.setAttribute("identifier", patientId);
+            item.setAttributeIfNotNull("ethnicity", ethnicity);
+            item.setAttributeIfNotNull("gender", gender);
+            item.setAttributeIfNotNull("site", site);
+            item.setReference("dataSet", dataSetRef);
+            patients.put(patientId, item);
+        }
+        return item;
+    }
+
     private Item createPatient(String patientId, String ethnicity, String gender)
             throws ObjectStoreException {
         Item item = patients.get(patientId);
         if (item == null) {
             item = createItem("Patient");
             item.setAttribute("identifier", patientId);
-//            if (!ethnicity.isEmpty()) {
             item.setAttributeIfNotNull("ethnicity", ethnicity);
-//            }
-//            if (!gender.isEmpty()) {
             item.setAttributeIfNotNull("gender", gender);
-//            }
             item.setReference("dataSet", dataSetRef);
             patients.put(patientId, item);
         }
         return item;
     }
+
 
     private Item createReferral(String patientId, String referralId, String age, String locality,
                                 String diagnosis, String urgency, String source, String outcome, String referralDate,
@@ -1882,15 +1920,15 @@ public class PorConverter extends BioFileConverter {
         if (identifier.startsWith("RT")) {
             return identifier.replace("RT", "");
         }
-        if (identifier.startsWith("TH")) {
-            return identifier.replace("TH", "");
-        }
-        if (identifier.startsWith("LT")) {
-            return identifier.replace("LT", "");
-        }
-        if (identifier.startsWith("RMY")) {
-            return identifier.replace("RMY", "");
-        }
+//        if (identifier.startsWith("TH")) {
+//            return identifier.replace("TH", "");
+//        }
+//        if (identifier.startsWith("LT")) {
+//            return identifier.replace("LT", "");
+//        }
+//        if (identifier.startsWith("RMY")) {
+//            return identifier.replace("RMY", "");
+//        }
         if (identifier.contains("_")) {
             String[] splitted = identifier.split("_");
             return splitted[splitted.length - 1];

@@ -11,7 +11,7 @@
     </class>
 
     <class name="Patient" is-interface="true">
-        <attribute name="identifier" type="java.lang.Long" />
+        <attribute name="identifier" type="java.lang.String" />
         <attribute name="ethnicity" type="java.lang.String" />
         <attribute name="gender" type="java.lang.String" />
         <reference name="dataSet" referenced-type="DataSet"
