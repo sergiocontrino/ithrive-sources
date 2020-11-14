@@ -1553,11 +1553,11 @@ public class PorConverter extends BioFileConverter {
 //                continue;
 //            }
             String referralId = line[1];
-            if (referralId.contains("E+")) {
-                LOG.warn("Unrecognised referral ID " + line[1] + " in line " + lineCount +
-                        " for patient " + line[0]);
-                continue;
-            }
+//            if (referralId.contains("E+")) {
+//                LOG.warn("Unrecognised referral ID " + line[1] + " in line " + lineCount +
+//                        " for patient " + line[0]);
+//                continue;
+//            }
             String age = line[6];
             String locality = getSite(line[7]);
             String ethnicity = line[2];
@@ -1929,10 +1929,10 @@ public class PorConverter extends BioFileConverter {
 //        if (identifier.startsWith("RMY")) {
 //            return identifier.replace("RMY", "");
 //        }
-        if (identifier.contains("_")) {
-            String[] splitted = identifier.split("_");
-            return splitted[splitted.length - 1];
-        }
+//        if (identifier.contains("_")) {
+//            String[] splitted = identifier.split("_");
+//            return splitted[splitted.length - 1];
+//        }
         if (identifier.endsWith("DA")) {
             return identifier.replace("DA", "");
         }
