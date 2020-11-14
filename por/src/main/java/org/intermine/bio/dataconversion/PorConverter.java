@@ -20,10 +20,7 @@ import org.intermine.xml.full.Item;
 import java.io.File;
 import java.io.FileReader;
 import java.io.Reader;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -1514,7 +1511,7 @@ public class PorConverter extends BioFileConverter {
         if (s.toLowerCase().contains("norwich")) return NORFOLK;
         if (s.toLowerCase().contains("yarmouth")) return NORFOLK;
 
-        return null;
+        return s;
     }
 
     ;
@@ -1539,6 +1536,7 @@ public class PorConverter extends BioFileConverter {
         String[] header = (String[]) lineIter.next();
         LOG.info("PROC Norfolk " + Arrays.toString(header));
         int lineCount = 1; // in excel line numbers start at 1 including header
+        Set<String> outPats = new HashSet<String>();
         while (lineIter.hasNext()) {
             lineCount++; // line number in the original file
             String[] line = (String[]) lineIter.next();
@@ -1580,8 +1578,12 @@ public class PorConverter extends BioFileConverter {
             String tier = line[16];
             String contactUrgency = line[23];
 
-            if (locality == null) {
-                LOG.warn(dataSet + " - wrong site for patient " + patientId + ": " + line[7]);
+
+            if (locality == null || !(locality.equalsIgnoreCase(SUFFOLK) || locality.equalsIgnoreCase(NORFOLK))) {
+                if (!outPats.contains(patientId)) {
+                    outPats.add(patientId);
+                    LOG.warn(dataSet + " - external or undeclared site for patient " + patientId + ": " + line[7]);
+                }
             }
 
             Item patient = createPatient(patientId, ethnicity, gender, locality);
