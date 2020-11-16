@@ -1250,6 +1250,7 @@ public class PorConverter extends BioFileConverter {
         // parse header in case
         String[] header = (String[]) lineIter.next();
         //LOG.info("PROC PAT " + Arrays.toString(header));
+        LOG.info("HEADER SIZE " + header.length);
 
         while (lineIter.hasNext()) {
             String[] line = (String[]) lineIter.next();
@@ -1278,7 +1279,7 @@ public class PorConverter extends BioFileConverter {
             String cumulativeCAMHS = line[23];
             age = roundAge(line);
 
-            Item patient = createPatient(patientId, ethnicity, gender);
+            Item patient = createPatient(patientId, ethnicity, gender, dataSet);
 
             Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
                     source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
@@ -1292,7 +1293,8 @@ public class PorConverter extends BioFileConverter {
 
             // this should deal with the potential 615 contacts recorded on each line
             // (4 attributes for each contact)
-            for (int j = 24; j < 24 * 615; j += 3) {
+            for (int j = 24; j <= header.length -1 ; j += 4) {
+                //LOG.info("LOOP: " + j);
                 if (line[j].isEmpty()) break; //stop if you find no value
                 String contactDate = line[j];
                 String team = line[j + 1];
