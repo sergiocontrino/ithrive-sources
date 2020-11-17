@@ -285,15 +285,15 @@ public class PorConverter extends BioFileConverter {
                 //referralDate = line[10];
                 //triageDate = line[11];
                 assessmentDate = line[12];
-                firstTreatmentDate = line[13];
+                firstTreatmentDate = cleanDate(line[13]);
                 //dischargeDate = line[14];
                 //dischargeReason = line[15];
                 //cumulativeCAMHS = line[16];
 
-                if (dataSet.contains("Ne-Cor")) {
-                    referralDate = line[11];
-                    triageDate = line[12];
-                    dischargeDate = line[15];
+                if (dataSet.contains("Nene")) {
+                    referralDate = cleanDate(line[11]);
+                    triageDate = cleanDate(line[12]);
+                    dischargeDate = cleanDate(line[15]);
                 } else if (dataSet.contains("Sunderland")) {
                     dischargeDate = line[13];
                     dischargeReason = line[14];
@@ -388,9 +388,9 @@ public class PorConverter extends BioFileConverter {
                 patientId = cleanIdentifier(line[0]);
                 referralId = cleanIdentifier(line[1]);
 
-                if (dataSet.contains("Na-Cor")) {
-                    contactDate = line[3];
-                    contactType = line[4];
+                if (dataSet.contains("Nene")) {
+                    contactDate = cleanDate(line[3]);
+                    contactType = cleanValue(line[4]);
                     team = line[5];
                 } else if (dataSet.contains("Stockport")) {
                     contactId = cleanIdentifier(line[2]);
