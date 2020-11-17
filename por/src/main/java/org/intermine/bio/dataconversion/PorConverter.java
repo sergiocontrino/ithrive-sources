@@ -581,7 +581,7 @@ public class PorConverter extends BioFileConverter {
                 ethnicity = line[2];
                 gender = line[3];
 
-                Item patient = createPatient(patientId, ethnicity, gender);
+                Item patient = createPatient(patientId, ethnicity, gender, dataSet);
 
                 // create patient additional data
                 // Patient_DisabilityFlag,DiagnosisCode_Primary,
@@ -940,18 +940,6 @@ public class PorConverter extends BioFileConverter {
             if (line[0].equals(null) || line[0].equals(""))
                 continue;
 
-//            String team = null;
-//            String attendance = null;
-//            String contactType = null;
-//            String contactUrgency = null;
-//            String contactDate = null;
-//            String contactId = null;
-//
-//            String episodeId = null;
-//            String ratingDate = null;
-//            String ratingType = null;
-//            String cgasScore = null;
-
             if (getCurrentFile().getName().contains("Patient")) {
                 patientId = line[0];
                 referralId = line[1];
@@ -964,11 +952,11 @@ public class PorConverter extends BioFileConverter {
                 gender = line[3];
                 diagnosis = line[4];
                 age = line[5];
-                dischargeDate = line[10];
+                dischargeDate = cleanDate(line[10]);
                 source = line[11];
                 urgency = line[12];
                 locality = line[13];
-                referralDate = line[4];
+                referralDate = cleanDate(line[6]);
                 outcome = line[15];
                 cumulativeCAMHS = line[18];
 
