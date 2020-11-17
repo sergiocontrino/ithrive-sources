@@ -423,7 +423,7 @@ public class PorConverter extends BioFileConverter {
             }
             // check if patient
             if (patients.get(patientId) == null) {
-                LOG.warn("No patient found with identifier: " + patientId);
+                LOG.warn(dataSet + ": no patient found with identifier: " + patientId);
                 continue;
             }
 
@@ -492,7 +492,7 @@ public class PorConverter extends BioFileConverter {
 
             // check if patient
             if (patients.get(patientId) == null) {
-                LOG.warn("No patient found with identifier: " + patientId);
+                LOG.warn(dataSet + ": no patient found with identifier: " + patientId);
                 continue;
             }
             // add attributes to referral
@@ -506,7 +506,7 @@ public class PorConverter extends BioFileConverter {
 //                thisReferral.setAttributeIfNotNull("ICD10diagnosis", ICD10diagnosis);
 //                thisReferral.setAttributeIfNotNull("assessmentDate", assessmentDate);
             } else {
-                LOG.warn("Please check your CONTACT data: no referral " + referralId + " for patient "
+                LOG.warn(dataSet + ": please check your CONTACT data: no referral " + referralId + " for patient "
                         + patientId + ".");
                 continue;
             }
@@ -720,7 +720,7 @@ public class PorConverter extends BioFileConverter {
                 }
 
                 if (patients.get(patientId) == null) {
-                    LOG.warn("REF Unknown patient! " + patientId);
+                    LOG.warn(dataSet + ": REF Unknown patient! " + patientId);
                 }
 
                 //ref2pat.put(referralId, patientId);
@@ -739,12 +739,8 @@ public class PorConverter extends BioFileConverter {
                 contactId = line[6];
 
                 if (patients.get(patientId) == null) {
-                    LOG.warn("CON Unknow patient! " + patientId);
+                    LOG.warn(dataSet + ": CON Unknow patient! " + patientId);
                 }
-                // this is always true
-                // if (referrals.get(contactId) == null) {
-                //    LOG.warn("CON Unknow referral! " + contactId);
-                // }
 
                 storeContact(patientId, contactId, contactId, null, contactDate, contactUrgency, contactType,
                         attendance, null, team, null);
@@ -960,10 +956,10 @@ public class PorConverter extends BioFileConverter {
                 patientId = line[0];
                 referralId = line[1];
                 if (line.length < 17) {
-                    LOG.warn("Skipping record with missing data: [" + lineCount + "] " + patientId + "-" + referralId);
+                    LOG.warn(dataSet + ": skipping record with missing data: [" + lineCount + "] "
+                            + patientId + "-" + referralId);
                     continue;
                 }
-                //LOG.info("PAT " + patientId +"-"+ referralId);
                 ethnicity = line[2];
                 gender = line[3];
                 diagnosis = line[4];
@@ -980,7 +976,7 @@ public class PorConverter extends BioFileConverter {
                 attendance = line[20] + "-" + line[21];
                 contactType = line[22];
 
-                Item patient = createPatient(patientId, ethnicity, gender);
+                Item patient = createPatient(patientId, ethnicity, gender, dataSet);
 
                 Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
                         source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
@@ -1004,7 +1000,7 @@ public class PorConverter extends BioFileConverter {
                 cgasScore = line[4];
 
                 if (patients.get(patientId) == null) {
-                    LOG.warn("OUTCOME: Unknown patient! " + patientId);
+                    LOG.warn(dataSet + ": OUTCOME - Unknown patient! " + patientId);
                 }
 //                if (referrals.get(referralId) == null) {
 //                    LOG.warn("CON Unknow referral! " + referralId);
@@ -1134,10 +1130,10 @@ public class PorConverter extends BioFileConverter {
                 measure = line[4];
                 measureType = line[5];
                 if (patients.get(patientId) == null) {
-                    LOG.warn("OUTCOME: Unknown patient! " + patientId);
+                    LOG.warn(dataSet + ": OUTCOME - Unknown patient! " + patientId);
                 }
                 if (referrals.get(referralId) == null) {
-                    LOG.warn("CON Unknow referral! " + referralId);
+                    LOG.warn(dataSet + ": CON - Unknow referral! " + referralId);
                 }
 
                 // create score records, one for wach score, only if present
