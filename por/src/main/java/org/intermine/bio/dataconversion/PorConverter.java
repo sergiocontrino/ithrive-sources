@@ -1465,7 +1465,7 @@ public class PorConverter extends BioFileConverter {
             String patientId = line[0]; //TODO: put prefix in source LT, TH
             String referralId = cleanIdentifier(line[1]);
             String age = null;
-            String locality = line[14];
+            String locality = null;
             String ethnicity = line[2];
             String gender = line[3];
             String diagnosis = line[4];
@@ -1474,12 +1474,12 @@ public class PorConverter extends BioFileConverter {
             String outcome = line[7];
             String referralDate = cleanIdentifier(line[8]);
             String triageDate = null;
-            String assessmentDate = cleanIdentifier(line[9]);       //NULL
-            String firstTreatmentDate = cleanIdentifier(line[10]);  //NULL
-            String dischargeDate = cleanIdentifier(line[11]);       //NULL
+            String assessmentDate = cleanDate(line[9]);       //NULL
+            String firstTreatmentDate = cleanDate(line[10]);  //NULL
+            String dischargeDate = cleanDate(line[11]);       //NULL
             String dischargeReason = cleanIdentifier(line[12]);     //NULL
             String cumulativeCAMHS = cleanIdentifier(line[13]);
-            String contactDate = cleanIdentifier(line[14]);         //NULL
+            String contactDate = cleanDate(line[14]);         //NULL
             String contactType = line[15];
             String attendance = cleanIdentifier(line[16]);
             String team = line[17];
