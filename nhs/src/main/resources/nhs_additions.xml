@@ -14,6 +14,7 @@
         <attribute name="identifier" type="java.lang.String" />
         <attribute name="ethnicity" type="java.lang.String" />
         <attribute name="gender" type="java.lang.String" />
+        <attribute name="site" type="java.lang.String" />
         <reference name="dataSet" referenced-type="DataSet"
                    reverse-reference="patients"/>
         <collection name="referrals" referenced-type="Referral"

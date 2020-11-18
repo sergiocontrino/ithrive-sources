@@ -65,8 +65,6 @@ public class NhsConverter extends BioFileConverter {
                 processContact(new FileReader(f));
         }
 
-//        storeReferrals();
-//        storePatients();
     }
 
 
@@ -97,9 +95,8 @@ public class NhsConverter extends BioFileConverter {
             String gender = line[5];
 
             String patRefId = patientId + "-" + referralId;  // to identify the referral
-            //LOG.info("PAT: " + patRefId);
 
-            Item patient = createPatient(patientId, ethnicity, gender);
+            Item patient = createPatient(patientId, ethnicity, gender, DATASET_TITLE);
             Item referral = createReferral(patRefId, referralId, age, patient);
         }
 
@@ -130,7 +127,7 @@ public class NhsConverter extends BioFileConverter {
         }
 
 
-    private Item createPatient(String patientId, String ethnicity, String gender)
+    private Item createPatient(String patientId, String ethnicity, String gender, String site)
             throws ObjectStoreException {
         Item item = patients.get(patientId);
         if (item == null) {
@@ -142,6 +139,7 @@ public class NhsConverter extends BioFileConverter {
             if (!gender.isEmpty()) {
                 item.setAttribute("gender", gender);
             }
+            item.setAttributeIfNotNull("site", site);
             item.setReference("dataSet", dataSetRef);
             patients.put(patientId, item);
         }
@@ -370,7 +368,7 @@ public class NhsConverter extends BioFileConverter {
             {
                 if (line[i].equalsIgnoreCase("yes"))
                 {
-                    LOG.info("DDIIAA " + assessmentDate + ": " + header[i]);
+                    LOG.debug("DDIIAA " + assessmentDate + ": " + header[i]);
                     store(createDiagnostic(patientId, patRefId, assessmentDate, header[i]));
                 }
             }
