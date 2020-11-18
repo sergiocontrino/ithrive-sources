@@ -503,7 +503,7 @@ public class PorConverter extends BioFileConverter {
     private void processWarrington(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
-        // format assumption: too many to report.. below the original one for cambridge
+        // format assumption:
         //
         // Patient ID,Referral ID ,Age at referral,Locality ,Ethnicity,Gender,Diagnosis,
         // Referral routine / urgent ,Referral source,Referral accepted / rejected,Referral date,
@@ -565,8 +565,6 @@ public class PorConverter extends BioFileConverter {
                 referralId = line[3];
                 age = line[2];
                 outcome = line[4];
-
-//                ref2pat.put(referralId, patientId);
 
                 Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
                         source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,

@@ -72,10 +72,6 @@ public class NhsConverter extends BioFileConverter {
 
     private void processDemographic(Reader reader) throws Exception {
 
-//        Set<String> duplicateEnsembls = new HashSet<String>();
-//        Map<String, Integer> storedGeneIds = new HashMap<String, Integer>();
-//        Map<String, String> geneEnsemblIds = new HashMap<String, String>();
-
         // Read all lines into id pairs, track any ensembl ids or symbols that appear twice
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
