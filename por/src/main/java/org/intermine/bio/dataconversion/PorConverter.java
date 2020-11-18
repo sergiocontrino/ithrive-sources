@@ -214,9 +214,9 @@ public class PorConverter extends BioFileConverter {
             String dischargeReason = null;
             String cumulativeCAMHS = null;
 
-            if (dataSet.contains("Waltham")) {
-                patientId = cleanIdentifier(line[0]);
-                referralId = cleanIdentifier(line[1]);
+            if (dataSet.contains("Waltham") || dataSet.contains("Stockport")) {
+                patientId = line[0];
+                referralId = line[1];
                 age = cleanIdentifier(line[2]);
                 locality = line[3];
                 ethnicity = line[4];
@@ -226,10 +226,10 @@ public class PorConverter extends BioFileConverter {
                 source = line[8];
                 outcome = line[9];
                 referralDate = line[10];
-                triageDate = cleanIdentifier(line[11]);
-                assessmentDate = line[12];
-                firstTreatmentDate = line[13];
-                dischargeDate = line[14];
+                triageDate = cleanDate(line[11]);
+                assessmentDate = cleanDate(line[12]);
+                firstTreatmentDate = cleanDate(line[13]);
+                dischargeDate = cleanDate(line[14]);
                 dischargeReason = line[15];
                 cumulativeCAMHS = cleanIdentifier(line[16]);
             } else if (dataSet.contains("Worcester")) {
@@ -268,10 +268,9 @@ public class PorConverter extends BioFileConverter {
                 dischargeDate = cleanDate(line[14]);
                 dischargeReason = line[15];
                 cumulativeCAMHS = line[16];
-
             } else {
-                patientId = cleanIdentifier(line[0]);
-                referralId = cleanIdentifier(line[1]);
+                patientId = line[0];
+                referralId = line[1];
                 age = cleanIdentifier(line[2]);
                 locality = line[3];
                 ethnicity = line[4];
@@ -336,7 +335,6 @@ public class PorConverter extends BioFileConverter {
 
         storePatients();
         storeReferrals();
-
     }
 
     private void processContact(Reader reader) throws Exception {
@@ -362,16 +360,16 @@ public class PorConverter extends BioFileConverter {
             String[] line = (String[]) lineIter.next();
             if (dataSet.contains("Worcester")) {
                 referralId = line[0];
-                contactId = cleanIdentifier(line[2]);
+                contactId = line[2];
                 contactDate = line[3];
                 ordinal = line[4];
-                contactType = line[5];
+                contactType = cleanValue(line[5]);
                 attendance = line[6];
                 team = line[7];
 
             } else {
-                patientId = cleanIdentifier(line[0]);
-                referralId = cleanIdentifier(line[1]);
+                patientId = line[0];
+                referralId = line[1];
 
                 if (dataSet.contains("Nene")) {
                     contactDate = cleanDate(line[3]);
@@ -381,7 +379,7 @@ public class PorConverter extends BioFileConverter {
                     contactId = cleanIdentifier(line[2]);
                     contactDate = line[3];
                     urgency = line[4];
-                    contactType = line[6];
+                    contactType = cleanValue(line[6]);
                     attendance = line[5];
                     team = line[7];
                 } else {

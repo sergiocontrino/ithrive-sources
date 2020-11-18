@@ -67,7 +67,7 @@
     </class>
 
     <class name="Contact" is-interface="true">
-        <attribute name="identifier" type="java.lang.Long" />
+        <attribute name="identifier" type="java.lang.String" />
         <attribute name="ordinal" type="java.lang.Integer" />
         <attribute name="contactDate" type="java.lang.String" />
         <attribute name="attendance" type="java.lang.String" />
