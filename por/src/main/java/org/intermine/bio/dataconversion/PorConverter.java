@@ -40,8 +40,6 @@ public class PorConverter extends BioFileConverter {
     private static final String NORFOLK = "Norfolk";
     private static final String SUFFOLK = "Suffolk";
 
-
-
     private Map<String, Item> patients = new HashMap<>();   // patientId, patient
     private Map<String, Item> referrals = new HashMap<>();  // patRefId, referral
     private Map<String, Item> contacts = new HashMap<>();  // patRefId, contact
@@ -83,6 +81,7 @@ public class PorConverter extends BioFileConverter {
     String attendance = null;
     String contactType = null;
     String contactUrgency = null;
+    String contactOutcome = null;
     String contactDate = null;
     String contactId = null;
 
@@ -126,6 +125,8 @@ public class PorConverter extends BioFileConverter {
             // process file
             if (fileName.contains("Warrington")) {
                 processWarrington(new FileReader(f));
+            } else if (fileName.contains("Bradford")) {
+                processBradford(new FileReader(f));
             } else if (fileName.contains("Lewisham")) {
                 processLewisham(new FileReader(f));
             } else if (fileName.contains("Hertfordshire")) {
@@ -874,6 +875,90 @@ public class PorConverter extends BioFileConverter {
         }
     }
 
+    private void processBradford(Reader reader) throws Exception {
+        Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
+
+        // format assumption:
+        // patient file
+        // Anon PT ID,REF ID,Gender Code,Age at referral,Ethnicity,CCG
+        // e.g.
+        // 10533,208454885,2,15,Patient ethnicity unknown,"NHS Airedale, Wharfedale and Craven CCG"
+        //
+        // contact file
+        // Anon PT ID,REF ID,Referal Date,Assessment Date (1st Successful Appointment),
+        // Date of first treatment (2nd Successful Appointment),Discharge Date,Referral Source,
+        // Referral urgent / routine,Team at each contact and tier of team,Reason for discharge,
+        // Referral In Outcome,Lifetime referrals to CAMHS,Appointment Start Date,Appointment Status Group,
+        // Appointment Contact Method
+        //
+        // e.g.
+        // 10533,208454885,06/08/2015,06/08/2015,11/12/2015,01/07/2016,Other,Non Urgent,CA (Core) West,
+        // Treatment completed,Accepted,2,06/08/2015,Successful Contact,
+        //
+
+        // parse header in case
+        String[] header = (String[]) lineIter.next();
+        LOG.info("PROC BRADFORD " + Arrays.toString(header));
+        int lineCount = 0;
+        while (lineIter.hasNext()) {
+            lineCount++;
+            String[] line = (String[]) lineIter.next();
+            // check if empty
+            if (line[0].equals(null) || line[0].equals(""))
+                continue;
+
+            if (getCurrentFile().getName().contains("Patient")) {
+                patientId = line[0];
+                referralId = line[1];
+                gender = line[2];
+                age = line[3];
+                ethnicity = line[4];
+                locality = line[5];
+
+                Item patient = createPatient(patientId, ethnicity, gender, dataSet);
+
+                Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
+                        source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
+                        dischargeDate, dischargeReason, cumulativeCAMHS);
+
+            } else { // Contact
+
+                patientId = line[0];
+                referralId = line[1];
+                referralDate = line[2];
+                assessmentDate = line[3];
+                firstTreatmentDate = line[4];
+                dischargeDate = line[5];
+                source = line[6];
+                urgency = line[7];
+                team = line[8];
+                dischargeReason = line[9];
+                outcome = line[10];
+                cumulativeCAMHS = line[11];
+
+                contactDate = line[12];
+                contactOutcome = line[13];
+                contactType = line[14];
+
+                if (patients.get(patientId) == null) {
+                    LOG.warn(dataSet + ": OUTCOME - Unknown patient! " + patientId);
+                }
+
+                // updates already created item (see patient) or creates a new one.
+                createReferral(patientId,referralId,age,locality,null,urgency,source,outcome,referralDate,
+                        null,assessmentDate,firstTreatmentDate,dischargeDate,dischargeReason,cumulativeCAMHS);
+
+                storeContact(patientId,referralId,null,null,contactDate,null,contactType,
+                        null, contactOutcome,null,null);
+            }
+        }
+        if (getCurrentFile().getName().contains("Contact")) {
+            storePatients();
+            storeReferrals();
+        }
+    }
+
+
     private void processLewisham(Reader reader) throws Exception {
         Iterator lineIter = FormattedTextParser.parseCsvDelimitedReader(reader);
 
@@ -1600,7 +1685,6 @@ public class PorConverter extends BioFileConverter {
             throws ObjectStoreException {
 
         String patRefId = patientId + "-" + referralId;  // to identify the referral
-//        LOG.info("PATREF = " + patRefId);
         Item item = referrals.get(patRefId);
         if (item == null) {
             item = createItem("Referral");
@@ -1624,6 +1708,21 @@ public class PorConverter extends BioFileConverter {
                 item.setReference("patient", patient);
             }
             referrals.put(patRefId, item);
+        } else {
+            //item.setAttributeIfNotNull("patientAge", age);
+            //item.setAttributeIfNotNull("locality", locality);
+            item.setAttributeIfNotNull("ICD10diagnosis", diagnosis);
+            item.setAttributeIfNotNull("urgency", urgency);
+            item.setAttributeIfNotNull("source", source);
+            item.setAttributeIfNotNull("outcome", outcome);
+            item.setAttributeIfNotNull("referralDate", referralDate);
+            item.setAttributeIfNotNull("triageDate", triageDate);
+            item.setAttributeIfNotNull("assessmentDate", assessmentDate);
+            item.setAttributeIfNotNull("firstTreatmentDate", firstTreatmentDate);
+            item.setAttributeIfNotNull("dischargeDate", dischargeDate);
+            item.setAttributeIfNotNull("dischargeReason", dischargeReason);
+            item.setAttributeIfNotNull("cumulativeCAMHS", cumulativeCAMHS);
+
         }
         return item;
     }
@@ -1959,6 +2058,10 @@ public class PorConverter extends BioFileConverter {
         if (fileName.contains("Bexley")) {
             dataSet = "Bexley";
             siteType = SITE_ITHRIVE;
+        }
+        if (fileName.contains("Bradford")) {
+            dataSet = "Bradford";
+            siteType = SITE_CONTROL;
         }
 // TODO: mv cambridge parser here
 //        if (fileName.contains("Cambridge")) {
