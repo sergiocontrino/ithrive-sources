@@ -25,6 +25,7 @@ import java.util.*;
 
 /**
  * @author
+ * sc
  */
 public class PorConverter extends BioFileConverter {
     //
@@ -1040,9 +1041,6 @@ public class PorConverter extends BioFileConverter {
                 if (patients.get(patientId) == null) {
                     LOG.warn(dataSet + ": OUTCOME - Unknown patient! " + patientId);
                 }
-//                if (referrals.get(referralId) == null) {
-//                    LOG.warn("CON Unknow referral! " + referralId);
-//                }
                 storeOutcome(patientId, referralId, episodeId, ratingDate, ratingType, cgasScore);
             }
         }
@@ -1082,45 +1080,6 @@ public class PorConverter extends BioFileConverter {
             // check if empty
             if (line[0].equals(null) || line[0].equals(""))
                 continue;
-            String patientId = null;
-            String referralId = null;
-            String age = null;
-            String locality = null;
-            String ethnicity = null;
-            String gender = null;
-            String diagnosis = null;
-            String urgency = null;
-            String source = null;
-            String outcome = null;
-            String referralDate = null;
-            String triageDate = null;
-            String assessmentDate = null;
-            String firstTreatmentDate = null;
-            String dischargeDate = null;
-            String dischargeReason = null;
-            String cumulativeCAMHS = null;
-
-            // contact
-            String team = null;
-            String attendance = null;
-            String contactType = null;
-            String contactUrgency = null;
-            String contactDate = null;
-            String tier = null;
-
-            // clinical outcomes
-            // NB: to check with curators
-            String ratingDate = null;
-            String rawScore = null;
-            String assName = null;
-            String snomed = null;
-            String scale = null;
-            String ageAtAssessment = null;
-            String grade = null;
-            String score = null;
-            String note = null;
-            String fiscalYear = null;
-            String firstOrLast = null;
 
             // outcome file
             String scoreDate = null;
@@ -1154,13 +1113,6 @@ public class PorConverter extends BioFileConverter {
                         source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
                         dischargeDate, dischargeReason, cumulativeCAMHS);
 
-                // create patient additional data
-//                int[] looper = {6, 7, 8, 9, 14, 16, 17};
-//                for (int i = 0; i < looper.length; i++) {
-//                    store(createAdditionalData(patientId, referralId, ADD_CLASS, header[looper[i]], line[looper[i]]));
-//                }
-//                storeContact(patientId, referralId, null, null,
-//                        contactDate, null, contactType, attendance, outcome, null, null);
             } else { // Outcome (stored in diagnostics)
 
                 patientId = line[0];
@@ -1169,9 +1121,6 @@ public class PorConverter extends BioFileConverter {
                 measureType = line[5];
                 if (patients.get(patientId) == null) {
                     LOG.warn(dataSet + ": OUTCOME - Unknown patient! " + patientId);
-                }
-                if (referrals.get(referralId) == null) {
-                    LOG.warn(dataSet + ": CON - Unknow referral! " + referralId);
                 }
 
                 // create score records, one for wach score, only if present
@@ -1325,7 +1274,6 @@ public class PorConverter extends BioFileConverter {
                 continue;
 
             // only one file..
-
             String patientId = line[1];
             String referralId = line[0];
             String age = null;
@@ -1367,27 +1315,13 @@ public class PorConverter extends BioFileConverter {
                 String contactType = line[j + 2];
                 String attendance = line[j + 3];
 
-//                Item contact = createContact(patientId, referralId, null, null,
-//                        contactDate, null, contactType, attendance, outcome, team, null);
                 storeContact(patientId, referralId, null, null,
                         contactDate, null, contactType, attendance, outcome, team, null);
             }
 
-//            // create cumulative contact data
-//            looper = new int[]{9,13,15,16,17,18};
-//            for (int i = 0; i < looper.length; i++) {
-//                store(createAdditionalData(patientId, referralId, CCD_CLASS, header[looper[i]], line[looper[i]]));
-//            }
-//
-//            // create diagnostics
-//            int[] looperD = {21,24,25,26,27,28};
-//            for (int i = 0; i < looperD.length; i++) {
-//                store(createDiagnostic(patientId, referralId, null, header[looperD[i]], line[looperD[i]]));
-//            }
         }
         storePatients();
         storeReferrals();
-        // storeContacts();
     }
 
     private void processStoke(Reader reader) throws Exception {
@@ -1430,7 +1364,6 @@ public class PorConverter extends BioFileConverter {
                 continue;
 
             // only one file..
-
             String patientId = line[0];
             String referralId = line[1];
             String age = line[2];
@@ -1535,30 +1468,9 @@ public class PorConverter extends BioFileConverter {
             storeContact(patientId, referralId, null, null,
                     contactDate, urgency, contactType, attendance, outcome, team, tier);
 
-            /*
-            // create patient additional data
-            int[] looper = {4,7,8,29,30,31,32,33};
-            for (int i = 0; i < looper.length; i++) {
-                store(createAdditionalData(patientId, referralId, ADD_CLASS, header[looper[i]], line[looper[i]]));
-            }
-
-            // create cumulative contact data
-            looper = new int[]{9,13,15,16,17,18};
-            for (int i = 0; i < looper.length; i++) {
-                store(createAdditionalData(patientId, referralId, CCD_CLASS, header[looper[i]], line[looper[i]]));
-            }
-
-            // create diagnostics
-            int[] looperD = {21,24,25,26,27,28};
-            for (int i = 0; i < looperD.length; i++) {
-                store(createDiagnostic(patientId, referralId, null, header[looperD[i]], line[looperD[i]]));
-            }
-
-             */
         }
         storePatients();
         storeReferrals();
-//        storeContacts();
     }
 
     private void processNorfolk(Reader reader) throws Exception {
@@ -1596,11 +1508,6 @@ public class PorConverter extends BioFileConverter {
 //                continue;
 //            }
             String referralId = line[1];
-//            if (referralId.contains("E+")) {
-//                LOG.warn("Unrecognised referral ID " + line[1] + " in line " + lineCount +
-//                        " for patient " + line[0]);
-//                continue;
-//            }
             String age = line[6];
             String locality = getSite(line[7]);
             String ethnicity = line[2];
@@ -1623,7 +1530,6 @@ public class PorConverter extends BioFileConverter {
             String tier = line[16];
             String contactUrgency = line[23];
 
-
             if (locality == null || !(locality.equalsIgnoreCase(SUFFOLK) || locality.equalsIgnoreCase(NORFOLK))) {
                 if (!outPats.contains(patientId)) {
                     outPats.add(patientId);
@@ -1632,20 +1538,16 @@ public class PorConverter extends BioFileConverter {
             }
 
             Item patient = createPatient(patientId, ethnicity, gender, locality);
-
             Item referral = createReferral(patientId, referralId, age, locality, diagnosis, urgency,
                     source, outcome, referralDate, triageDate, assessmentDate, firstTreatmentDate,
                     dischargeDate, dischargeReason, cumulativeCAMHS);
 
-//            Item contact = createContact(patientId, referralId, null, null,
-//                    contactDate, contactUrgency, contactType, attendance, outcome, team, tier);
             storeContact(patientId, referralId, null, null,
                     contactDate, contactUrgency, contactType, attendance, outcome, team, tier);
 
         }
         storePatients();
         storeReferrals();
-//        storeContacts();
     }
 
     private Item createPatient(String patientId, String ethnicity, String gender, String site)
@@ -1662,21 +1564,6 @@ public class PorConverter extends BioFileConverter {
         }
         return item;
     }
-
-//    private Item createPatient(String patientId, String ethnicity, String gender)
-//            throws ObjectStoreException {
-//        Item item = patients.get(patientId);
-//        if (item == null) {
-//            item = createItem("Patient");
-//            item.setAttribute("identifier", patientId);
-//            item.setAttributeIfNotNull("ethnicity", ethnicity);
-//            item.setAttributeIfNotNull("gender", gender);
-//            item.setReference("dataSet", dataSetRef);
-//            patients.put(patientId, item);
-//        }
-//        return item;
-//    }
-
 
     private Item createReferral(String patientId, String referralId, String age, String locality,
                                 String diagnosis, String urgency, String source, String outcome, String referralDate,
@@ -1708,9 +1595,9 @@ public class PorConverter extends BioFileConverter {
                 item.setReference("patient", patient);
             }
             referrals.put(patRefId, item);
-        } else {
-            //item.setAttributeIfNotNull("patientAge", age);
-            //item.setAttributeIfNotNull("locality", locality);
+        } else if (dataSet.equalsIgnoreCase("bradford")){
+            // for bradford age and locality come from the patient file and the rest of referral attributes
+            // from the contact file. referral items are created when parsing patient, and filled when parsing contacts
             item.setAttributeIfNotNull("ICD10diagnosis", diagnosis);
             item.setAttributeIfNotNull("urgency", urgency);
             item.setAttributeIfNotNull("source", source);
@@ -1981,19 +1868,6 @@ public class PorConverter extends BioFileConverter {
         if (identifier.startsWith("RT")) {
             return identifier.replace("RT", "");
         }
-//        if (identifier.startsWith("TH")) {
-//            return identifier.replace("TH", "");
-//        }
-//        if (identifier.startsWith("LT")) {
-//            return identifier.replace("LT", "");
-//        }
-//        if (identifier.startsWith("RMY")) {
-//            return identifier.replace("RMY", "");
-//        }
-//        if (identifier.contains("_")) {
-//            String[] splitted = identifier.split("_");
-//            return splitted[splitted.length - 1];
-//        }
         if (identifier.endsWith("DA")) {
             return identifier.replace("DA", "");
         }
