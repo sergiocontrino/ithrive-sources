@@ -4,14 +4,14 @@
 <classes>
     <!-- add any <class> elements here -->
 
-    <class name="ethnicity" is-interface="true">
+    <class name="Ethnicity" is-interface="true">
         <attribute name="nhsCode" type="java.lang.String"/>
         <attribute name="description" type="java.lang.String"/>
         <collection name="patients" referenced-type="Patient"
                     reverse-reference="ethnicity"/>
     </class>
 
-    <class name="site" is-interface="true">
+    <class name="Site" is-interface="true">
         <!-- <attribute name="identifier" type="java.lang.String" /> -->
         <attribute name="shortName" type="java.lang.String"/>
         <attribute name="name" type="java.lang.String"/>
@@ -22,7 +22,7 @@
     </class>
 
 
-    <class name="outcomeVariable" is-interface="true">
+    <class name="GenericOutcomeVariable" is-interface="true">
         <!-- <attribute name="identifier" type="java.lang.String" /> -->
         <attribute name="assessmentTitle" type="java.lang.String"/>
         <attribute name="variableTitle" type="java.lang.String"/>
@@ -52,7 +52,13 @@
                    reverse-reference="patients"/>
         <reference name="ethnicity" referenced-type="Ethnicity"
                    reverse-reference="patients"/>
+        <reference name="synopsis" referenced-type="CurrentView"
+                   reverse-reference="patient"/>
         <collection name="referrals" referenced-type="Referral"
+                    reverse-reference="patient"/>
+        <collection name="outcomeValues" referenced-type="GenericOutcomeValue"
+                    reverse-reference="patient"/>
+        <collection name="diagnostics" referenced-type="Diagnostic"
                     reverse-reference="patient"/>
         <!--
                 <reference name="dataSet" referenced-type="DataSet"
@@ -157,7 +163,7 @@
     </class>
 
 
-    <class name="genericOutcomeValue" is-interface="true">
+    <class name="GenericOutcomeValue" is-interface="true">
         <attribute name="identifier" type="java.lang.Integer"/>
         <attribute name="measurementDate" type="java.util.Date"/>
         <attribute name="isFirstOfFinancialYearStarting" type="java.util.Date"/>
@@ -169,14 +175,13 @@
         <attribute name="note" type="java.lang.String"/>
 
         <reference name="patient" referenced-type="Patient"
-                   reverse-reference="genericOutcomeValues"/>
-        <reference name="referral" referenced-type="Referral"
-                   reverse-reference="genericOutcomeValues"/>
-        <reference name="genericOutcomeVariable" referenced-type="GenericOutcomeVariable"
-                   reverse-reference="genericOutcomeValue"/>
+                   reverse-reference="outcomeValues"/>
+        <reference name="referral" referenced-type="Referral" />
+        <reference name="variable" referenced-type="GenericOutcomeVariable"
+                   reverse-reference="values"/>
     </class>
 
-    <class name="currentView" is-interface="true">
+    <class name="CurrentView" is-interface="true">
         <attribute name="contactHow" type="java.lang.String"/>
 
         <attribute name="anxiousAwayFromCaregivers" type="java.lang.Boolean"/>
