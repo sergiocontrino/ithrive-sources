@@ -66,4 +66,9 @@ public class IthrivedbConverter extends BioDBConverter
     public String getDataSetTitle(String taxonId) {
         return DATASET_TITLE;
     }
+
+    @Override
+    public String getLicence() {
+        return null;
+    }
 }
