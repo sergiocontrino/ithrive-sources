@@ -27,8 +27,8 @@ import java.sql.Statement;
 public class IthrivedbConverter extends BioDBConverter
 {
     // 
-    private static final String DATASET_TITLE = "Add DataSet.title here";
-    private static final String DATA_SOURCE_NAME = "Add DataSource.name here";
+    private static final String DATASET_TITLE = "iThriveDB";
+    private static final String DATA_SOURCE_NAME = "NHS";
 
 
     /**
