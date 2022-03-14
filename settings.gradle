@@ -5,3 +5,5 @@ include ':bio-source-por'
 project(':bio-source-por').projectDir = new File(settingsDir, './por')
 include ':bio-source-ithrivedb'
 project(':bio-source-ithrivedb').projectDir = new File(settingsDir, './ithrivedb')
+include ':bio-source-risk-factors'
+project(':bio-source-risk-factors').projectDir = new File(settingsDir, './risk-factors')
